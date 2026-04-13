@@ -1,101 +1,103 @@
 options levelb comments_dash
 namespace data_List expose List
-import ListIterator
 import rxfnsb
+
 /**
-* A dynamic, ordered collection backed by a stringarray
-*
-* The List supports 1-based indexed access via the [] operator and grows
-* automatically as elements are appended.
-*
+ * A dynamic, ordered collection backed by a stem object.
+ *
+ * The List supports 1-based indexed access via the [] operator.
+ *
  * Internal representation:
- *   val.1 .. val.n   - elements (stem tails)
- *   card             - number of elements in the list
+ *   val_   - backing stem object
+ *   size_  - number of elements in the list
  *
- * This class is optimized for:
- *   - fast append (O(1))
- *   - fast indexed access (O(1))
- *
- * Insertions/removals in the middle require shifting elements (O(n)).
+ * Elements are stored in the stem under keys "1", "2", ..., "size_".
  */
- List: class
- card = .int
- val = .string[]
- 
- /**
- * Factory method, returns a List object, which initially is empty
- */
+List: class
+size_ = .int
+val_  = .stem
+
+/**
+* Factory method, returns an empty List object.
+*/
   *: factory
-    card = 0
+    size_ = 0
+    val_ = .stem()
     return
     
- /**
- * Initializes an empty list.
- */
+    /**
+    * Initializes an empty list.
+    */
   init: method = .int
-    card = 0
+    size_ = 0
+    val_ = .stem()
     return 1
     
     /**
     * Appends an element to the end of the list.
     *
     * @param item  The element to add.
+    * @return      1 on success
     */
   add: method = .int
     arg item = .string
-    card = card + 1
-    val.card = item
+    size_ = size_ + 1
+    val_.size_ = item
     return 1
-    
     
     /**
     * Returns the element at the specified index.
     *
     * @param index  1-based index of the element.
-    * @return       The element at the given index, or 0 if out of bounds. TODO exception
+    * @return       The element at the given index, or 0 if out of bounds.
     */
   get: method = .string
     arg index = .int
-    if index < 1 then return 0 -- TODO exception
-    if index > card then return 0 -- TODO exception
-    return val.index
-      
-      
-      /**
-      * Replaces the element at the specified index.
-      *
-      * @param index  1-based index of the element.
-      * @param item   The new value.
-      */
+    
+    if index < 1 then return 0
+    if index > size_ then return 0
+    
+    return val_.get(index)
+    
+    /**
+    * Replaces the element at the specified index.
+    *
+    * @param index  1-based index of the element.
+    * @param item   The new value.
+    * @return       1 on success, 0 if out of bounds
+    */
   set: method = .int
     arg index = .int, item = .string
-    if index >= 1 then if index <= card then
-      val.index = item
-      return 1
-      
-      /**
-      * Inserts an element at the specified index.
-      *
-      * Elements at and after the index are shifted to the right.
-      *
-      * @param index  1-based index where the element will be inserted.
-      * @param item   The element to insert.
-      */
+    
+    if index < 1 then return 0
+    if index > size_ then return 0
+    
+    val_.index = item
+    return 1
+    
+    /**
+    * Inserts an element at the specified index.
+    *
+    * Elements at and after the index are shifted to the right.
+    *
+    * @param index  1-based index where the element will be inserted.
+    * @param item   The element to insert.
+    * @return       1 on success
+    */
   insert: method = .int
     arg index = .int, item = .string
     
     if index < 1 then index = 1
-    if index > card + 1 then index = card + 1
+    if index > size_ + 1 then index = size_ + 1
     
-    do i = card to index by -1
-      h=i+1
-      val.h = val.i
+    do i = size_ to index by -1
+      h = i + 1
+      val_.h = val_.i
     end
     
-    val.index = item
-    card = card + 1
+    val_.index = item
+    size_ = size_ + 1
     return 1
-    
     
     /**
     * Removes and returns the element at the specified index.
@@ -106,32 +108,31 @@ import rxfnsb
     * @return       The removed element, or 0 if out of bounds.
     */
   remove: method = .string
-     arg index = .int
+    arg index = .int
     
-    if index < 1 | index > card then
-      return 0 -- TODO raise exception
-      
-      item = val.index
-      
-      do i = index to card - 1
-	h=i+1
-	val.i = val.h
-      end
-      
-      val.card = ''
-      card = card - 1
-      
-      return item
-      
-      
-      /**
-      * Returns the number of elements in the list.
-      *
-      * @return The size of the list.
-      */
+    if index < 1 then return 0
+    if index > size_ then return 0
+    
+    item = val_.get(index)
+    
+    do i = index to size_ - 1
+      h = i + 1
+      val_.i =  val_.h
+    end
+    
+    /* No delete in stem yet; blank out old last slot */
+    val_.size_ = ""
+    size_ = size_ - 1
+    
+    return item
+    
+    /**
+    * Returns the number of elements in the list.
+    *
+    * @return The size of the list.
+    */
   size: method = .int
-    return card
-    
+    return size_
     
     /**
     * Tests whether the list is empty.
@@ -139,24 +140,27 @@ import rxfnsb
     * @return 1 if empty, 0 otherwise.
     */
   isEmpty: method = .int
-    return card = 0
+    return size_ = 0
+    
+    /**
+    * Removes all elements from the list.
+    *
+    * @return 1 on success
+    */
+  clear: method = .int
+    do i = 1 to size_
+      val_.i = ""
+    end
+    size_ = 0
+    return 1
     
     /**
     * Returns an iterator over this list.
     *
-    * @return A ListIterator.
+    * @return A ListIterator object.
     */
-  -- iterator: method = .ListIterator
-  --   return .ListIterator(this)
-    
-    /**
-    * Removes all elements from the list.
-    */
-  clear: method = .void
-    do i = 1 to card
-      val.i = ''
-    end
-    card = 0
-    return
-    
+    -- iterator: method = .object
+    --   return .ListIterator(this)
+    iterator: method = .ListIterator
+      return .ListIterator(val_)
     

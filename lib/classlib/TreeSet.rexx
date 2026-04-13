@@ -33,12 +33,12 @@ val = .int
     return tmput(val, key, key)
 
 /**
- * method fromStem adds elements to this TreeSet instance
+ * method fromArray adds elements to this TreeSet instance
  * from a stem, and deduplicates and orders them.
  * @parm .string items
  * @result .int added
  */
-  fromStem: method = .int
+  fromArray: method = .int
     arg items = .string[]
     added = 0
     loop i = 1 to items.0
@@ -101,7 +101,7 @@ val = .int
     * method keystem returns the items in this TreeSet 
     * as a rexx stem
     */
-  toStem: method = .string[]
+  toArray: method = .string[]
     list = .string[]
     n = tmkeys(val, list)
     return list

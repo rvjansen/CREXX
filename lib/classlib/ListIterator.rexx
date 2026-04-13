@@ -21,7 +21,7 @@ import List
  */
 ListIterator: class
 
-list_  = .List
+list_  = .stem
 index_ = .int
 
 
@@ -31,9 +31,9 @@ index_ = .int
  * @param list  The List to iterate over.
  */
 *: factory
-  arg list = .List
-  -- arg s = .stem
-  list_  = list
+  -- arg list = .List
+  arg s = .stem
+  list_  = s
   index_ = 0
   return
 
@@ -44,7 +44,7 @@ index_ = .int
  * @return 1 if there is a next element, 0 otherwise.
  */
 hasNext: method = .int
-  return index_ < list_.size()
+  return index_ < list.0
 
 
 /**
