@@ -81,10 +81,10 @@ val = .int
     return list
 
     /**
-     * method keystem returns the keys in this HashMap 
-     * as a Rexx stem
+     * method valueArray returns the keys in this HashMap 
+     * as a Rexx array
      */
-  valueStem: method = .string[]
+  valueArray: method = .string[]
     list = .string[]
     vals = .string[]
     n = stemiterate(val, list, vals)
@@ -96,7 +96,7 @@ val = .int
      */
   keySet: method = .TreeSet
     ts = .TreeSet()
-    rc = ts.fromStem(keyStem())
+    rc = ts.fromArray(keyStem())
     return ts
 
     /**
@@ -106,7 +106,7 @@ val = .int
     */
   valueSet: method = .TreeSet
     ts = .TreeSet()
-    rc = ts.fromStem(valueStem())
+    rc = ts.fromArray(valueArray())
     return ts
 
     /**

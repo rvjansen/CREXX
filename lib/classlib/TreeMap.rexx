@@ -113,7 +113,7 @@ val = .int
      */
   keySet: method = .TreeSet
     ts = .TreeSet()
-    rc = ts.fromStem(keyStem())
+    rc = ts.fromArray(keyStem())
     return ts
 
     /**
@@ -123,7 +123,7 @@ val = .int
     */
   valueSet: method = .TreeSet
     ts = .TreeSet()
-    rc = ts.fromStem(valueStem())
+    rc = ts.fromArray(valueStem())
     return ts
 
     /**

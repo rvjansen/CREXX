@@ -1,5 +1,5 @@
 /* rexx */
-options levelb
+options levelb comments_dash
 
 namespace rxfnsb expose stem
 
@@ -61,10 +61,10 @@ stem: class
     idx = buckets[b]
     last_idx = 0
 
-    say 'stemset value:' value
-    say 'stemset key:' key
-    say 'stemset hash:' b
-    say 'stemset idx:' idx
+    -- say 'stemset value:' value
+    -- say 'stemset key:' key
+    -- say 'stemset hash:' b
+    -- say 'stemset idx:' idx
     /* Update existing if found */
     do while idx > 0
       if keys[idx] = key then do
