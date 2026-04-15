@@ -89,18 +89,18 @@ void searchReplace(char *str, char search, char replace) {
  * Get environment variable (directory)
  * -------------------------------------------------------------------------------------
  */
-PROCEDURE(getEnv) {
-    char *varName = GETSTRING(ARG0);
-    if (!varName) {
-        RETURNSIGNAL(SIGNAL_FAILURE, "Invalid argument")
-    }
-    char *varValue = getenv(varName);   
-    if (varValue == NULL) {             
-        RETURNSIGNAL(SIGNAL_FAILURE, "Environment variable not found")
-    }
-    RETURNSTR(varValue);
-ENDPROC
-}
+/* PROCEDURE(getEnv) { */
+/*     char *varName = GETSTRING(ARG0); */
+/*     if (!varName) { */
+/*         RETURNSIGNAL(SIGNAL_FAILURE, "Invalid argument") */
+/*     } */
+/*     char *varValue = getenv(varName);    */
+/*     if (varValue == NULL) {              */
+/*         RETURNSIGNAL(SIGNAL_FAILURE, "Environment variable not found") */
+/*     } */
+/*     RETURNSTR(varValue); */
+/* ENDPROC */
+/* } */
 /* -------------------------------------------------------------------------------------
  * Get current working directory
  * -------------------------------------------------------------------------------------
@@ -1299,8 +1299,8 @@ PROCEDURE(pipeclose) {
  */
 LOADFUNCS
 //      C Function, REXX namespace & name, Option, Return Type, Arguments
-    ADDPROC(getEnv,      "system.getenv",      "b",    ".string", "input=.string");
     ADDPROC(getdir,      "system.getdir",      "b",    ".string", "");
+    ADDPROC(getdir,      "system.getCWD",      "b",    ".string", "");
     ADDPROC(getLoadPath, "system.getloadpath", "b",    ".string", "");
     ADDPROC(setdir,      "system.setdir",      "b",    ".int",    "arg0=.string");
     ADDPROC(testdir,     "system.testdir",     "b",    ".int",    "arg0=.string");
