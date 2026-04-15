@@ -3,10 +3,10 @@ namespace system_os expose os
 import system
 
 /**
- * class os is comprised of methods for which interaction with
- * the operating system is necessary. It does so in a platform 
- * independent way and is backed by the system plugin.
- */
+* class os is comprised of methods for which interaction with
+* the operating system is necessary. It is is backed by the
+* system plugin which does so in a platform independent way. 
+*/
 os: class
 
 /** 
@@ -33,7 +33,7 @@ os: class
     /** 
     * method getLoadPath returns the path from which
     * the program is run
-    * @return .string userid tsk
+    * @return .string loadpath
     */
   loadpath: method = .string
     return getLoadPath()
