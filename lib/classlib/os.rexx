@@ -1,4 +1,4 @@
-options levelb
+options levelb comments_dash
 namespace system_os expose os
 import system
 
@@ -38,3 +38,63 @@ os: class
   loadpath: method = .string
     return getLoadPath()
     
+    /**
+    * Returns the operating system name.
+    *
+    * @return Operating system name
+    */
+  osname: method = .string
+    return opsys()
+    
+    /**
+    * Appends one binary file to another.
+    *
+    * @param source Source file
+    * @param target Target file
+    * @return       1 on success, 0 on failure
+    */
+  appendBinaryFile: method = .int
+    arg source = .string, target = .string
+    return append(source, target)
+
+    /**
+    * Returns the host or computer name.
+    *
+    * @return Host name
+    */
+  getHost: method = .string
+    return host()
+    
+    /**
+    * Emits a beep.
+    *
+    * @return 1 on success, 0 on failure
+    */
+  beep: method = .int
+    say 'TODO: beep is not fully implemented'
+    return _beep()
+
+    /**
+   * Waits for a number of milliseconds.
+   *
+   * @param time 
+   * @return     1 on success, 0 on failure
+   */
+  wait: method = .int
+    arg time = .int
+    say 'TODO: wait is not fully implemented'
+    return _wait(time)
+
+    /**
+    * Lists modules in an rxbin source.
+    *
+    * @param source rxbin file
+    * @return       Status code or count, depending on native implementation
+    */
+  rxbinModules: method = .int
+    arg source = .string
+    return lmodules(source)
+
+  listDir: method = .int
+    arg file = .string, entries = .string[]
+    return listdir(file,entries)
