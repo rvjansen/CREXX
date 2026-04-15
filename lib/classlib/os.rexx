@@ -95,6 +95,26 @@ os: class
     arg source = .string
     return lmodules(source)
 
+    /**
+    * method listDir returns the files in a directory
+    * @parm .string file directory name
+    * @ return .string[]
+    */
   listDir: method = .int
     arg file = .string, entries = .string[]
-    return listdir(file,entries)
+    say 'TODO: listdir needs to be tested'
+    return _listdir(file,entries)
+
+    /*
+    * method getEnv
+    * returns the contents of an environment variable
+    * @parm .string name
+    * @return .string content
+    * note: this duplicates the getenv() bif.
+    */
+  getEnv: method = .string
+    arg env_name = .string
+    value = ""
+    assembler getenv value,env_name
+    return value
+
