@@ -77,6 +77,92 @@ CTest phases take 3,708.62 seconds on macOS and 4,385.57 seconds on Linux. No
 AddressSanitizer or LeakSanitizer diagnostic appears in either retained
 artifact.
 
+## Current overnight regression — 10 October 2026
+
+### SAN-QA-018 — Classic whole-number BIF operands round through binary float
+
+Status: repaired; full platform proof remains open. Owner: Codex, GitHub pipeline
+diagnosis/repair requested by Adrian on 2026-10-10. Affected revision:
+`10e8184e39ad28e62178055473249925f9db82a7`.
+On 2026-10-10 Adrian explicitly authorized publishing the fixes and assigned
+remaining SAN-QA-018 platform proof to **Codex at the next Release 1 release-QA
+gate**. This permits bounded implementation/publication closeout; it does not
+close or downgrade this release-blocking item.
+
+- Scheduled [Sanitizer QA 38022249457](https://github.com/adesutherland/CREXX/actions/runs/38022249457),
+  Linux x64 ASan/LSan, fails all four `levelc_bif_integer_limits` modes at
+  `ARG(9223372036854775807)`. The maintained VM reports `CONVERSION_ERROR`
+  in `RexxClassicBifArg.crexx:58`; no ASan/LSan memory diagnostic appears in
+  the full retained build, prep or CTest logs.
+- Original trigger: `tools/asan-run.sh --phase full --build-jobs 4 --test-jobs 8
+  --exclude-label '^performance-measurement$' --no-live-tail`, with Linux
+  build/test leaks on. The gate stops after the four functional failures;
+  remaining unexecuted tests are not passes.
+- Retained log: `/tmp/crexx-san-artifacts.0TnyOD/20261010-035546-full/ctest.log`,
+  lines 3172–3228. Permanent evidence is owned by the
+  [pipeline repair plan](planning/release-1/ci-core-stream-packaging-2026-10-10.md).
+- Root cause: a validated canonical whole-number string is consumed through
+  `+ 0`, emitting `stof`, `fadd`, `ftoi`. Binary64 rounds INT64_MAX to 2^63.
+  Linux's checked float-to-integer range test rejects it. The direct integer
+  conversion must preserve validated whole-number operands exactly.
+- Permanent reproducer: `compiler/tests/rexx_src/levelc_bif_integer_limits.rexx`,
+  in optimized/no-opt direct/linked modes. Preserve existing output and authored
+  Classic range-error checks.
+- Repair: 54 validated whole-number consumers in 24 Classic sources use direct
+  checked `as .int`, including stream position conversion before subtracting
+  one. `classic_unicode_contract.py` additionally checks a zero-length read
+  and omitted-text output positioned at INT64_MAX without allocating padding.
+  All complete RexxDoc blocks remain unchanged.
+- Normal Debug BIF correctness passes 169/169 (294.94 seconds). Generated Debug
+  and Release ARG procedures use `stoi` rather than the lossy float sequence.
+  The [development receipt](qa/ci-core-stream-packaging-2026-10-10/README.md)
+  owns exact final-input focused normal/maintained-ASan evidence.
+- Next action, **Codex / next Release 1 release-QA gate**: run the permanent
+  focused command and complete supported Linux ASan/LSan and Apple full
+  sanitizer closure on the release candidate inputs. No suppression or
+  exclusion is proposed. This item remains release-blocking until those gates
+  pass; current bounded closeout supports no sanitizer-clean/release-ready claim.
+
+## Previous overnight regression — 9 October 2026
+
+### SAN-010 — frame-control AST unit retains compiler-owned allocations
+
+Status: closed 2026-10-09. Owner: Codex, overnight QA repair/publication task requested by
+Adrian on 2026-10-09. Affected candidate: develop `0aafdb155b07d2a345193a870cc47922e1e837c0`;
+the local Level C closeout `b1b8bed2d` still needs the same cleanup repair.
+
+- Observed first-party Linux LeakSanitizer finding: 6,831 bytes in 52
+  allocations, all rooted in `compiler/tests/test_frame_control_ast.c` AST,
+  scopes, symbol metadata and emitted output fragments. The fixture creates a
+  stack Context and never releases its compiler-owned objects.
+- Original trigger: scheduled [Sanitizer QA 37881640063](https://github.com/adesutherland/CREXX/actions/runs/37881640063),
+  Linux x64 ASan/LSan job 113662450534, maintained runner `tools/asan-run.sh
+  --phase full --build-jobs 4 --test-jobs 8 --exclude-label '^performance-measurement$'`
+  with build/test `detect_leaks=1`. The run stops at `frame_control_ast`;
+  unexecuted cases are not passes. The macOS ASan lane passes but cannot supply
+  LSan proof.
+- Retained original log: [linux-sanitizer-ctest.log](qa/overnight-2026-10-09/failed/linux-sanitizer-ctest.log).
+- Permanent reproducer/closure test: existing CTest `frame_control_ast`. Repair
+  must release output/AST/symbol/scope/flow ownership through canonical Context
+  cleanup, preserving all frame-node emission assertions and source bounds.
+- Repair `2e8c820c6` uses `cntx_f`, an owned source buffer and `fre_cntx`.
+  All original frame emission and source assertions remain. Normal Debug and
+  Apple ASan focused frame checks pass; Apple LSan is unsupported.
+- Matching supported Linux focused ASan/LSan passes with leaks on in
+  `build-asan-clang/asan-logs/20261009-090042-ctest`. Final full supported
+  Ubuntu ARM64/Clang 18 ASan/LSan passes **3,116/3,116** (5,010.29 seconds)
+  at `build-asan-clang/asan-logs/20261009-101427-full`, with build/test leaks on
+  and only the maintained performance-measurement exclusion. Build/prep/test
+  logs contain no sanitizer report. The first attempt stopped on an ordinary
+  DB-decimal rounding defect, repaired in `1ac5995c6`; the complete gate was
+  rerun after that production input change without using partial passes as an
+  exclusion list. No suppression or unsupported leak-off claim was used.
+- Full normal Debug passes 3,320/3,320 with affected DB consumers requalified
+  after their repair. [Qualification receipt](qa/overnight-2026-10-09/qualification.json)
+  and [full supported summary](qa/overnight-2026-10-09/linux-full/summary.log)
+  identify final input fingerprints, commands, platform and retained full logs.
+  This closes SAN-010, not wider Release 1 platform or language compatibility.
+
 ## Native inference integration finding
 
 Status at 2026-09-16: SAN-009 is closed within the approved first-party scope.

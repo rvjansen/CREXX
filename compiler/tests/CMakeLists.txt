@@ -5627,6 +5627,19 @@ function(add_levelc_runtime_slice_test NAME SOURCE_FILE EXPECTED_OUTPUT)
 endfunction()
 
 function(add_runtime_bytes_test NAME SOURCE_FILE EXPECTED_HEX LEVEL)
+    if(WIN32)
+        # The captured process stdout is a CRT text stream. Keep payload hex
+        # exact and construct its native newline bytes in the expectation.
+        string(REGEX REPLACE "(..)" "\\1;" _expected_bytes "${EXPECTED_HEX}")
+        set(EXPECTED_HEX "")
+        foreach(_byte IN LISTS _expected_bytes)
+            if(_byte STREQUAL "0a")
+                string(APPEND EXPECTED_HEX "0d0a")
+            else()
+                string(APPEND EXPECTED_HEX "${_byte}")
+            endif()
+        endforeach()
+    endif()
     set(SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${NAME}.cmake")
     set(SCRIPT_CONTENT "")
     string(APPEND SCRIPT_CONTENT
@@ -6165,7 +6178,7 @@ add_levelc_lowered_tree_shape_test(levelc_signal_direct_frame_tree
         rexx_src/levelc_signal_direct.rexx
         "FRAME_BRANCH"
         "FRAME_LABEL"
-        "setSymbolValue")
+        "setSignalLine")
 add_levelc_lowered_tree_shape_test(levelc_signal_value_frame_tree
         rexx_src/levelc_signal_value_once.rexx
         "FRAME_BRANCH"
@@ -7280,8 +7293,10 @@ add_levelc_runtime_slice_test(levelc_slice32_unbounded_control
 add_levelc_runtime_slice_test(levelc_slice32_unbounded_control_noopt
         rexx_src/levelc_slice32_unbounded_control.rexx
         "plain 1\nplain 2\nafter-plain 3\nnext 3\nnext 5\nafter-next 7\ndown 3\ndown 2\ndown 1\nafter-down 0\nchanged 3\nchanged 4\nafter-changed 5\nwhile 1 1\nwhile 2 2\nafter-while 3 3\nuntil 1 0\nuntil 2 1\nafter-until 2 2\n2\n" -n)
+# LC-UNICODE normal sweep: the old 60 s limit expired under parallel host load;
+# unchanged isolated replay took 3.33 s. Protect against hangs, not host speed.
 set_tests_properties(levelc_slice32_unbounded_control
-        levelc_slice32_unbounded_control_noopt PROPERTIES TIMEOUT 60)
+        levelc_slice32_unbounded_control_noopt PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
 add_levelc_runtime_slice_test(levelc_slice33_dynamic_to
         rexx_src/levelc_slice33_dynamic_to.rexx
         "fixed 1 3\nfixed 2 1\nfixed 3 1\nafter-fixed 4 1\nendpoint 10\nafter-zero 2 1\ndown 3 1\ndown 2 9\ndown 1 9\nafter-down 0 9\nwhile 1\nwhile 2\nafter-while 3\nuntil 1\nuntil 2\nafter-until 2\nafter-outer 4\n")
@@ -7310,8 +7325,9 @@ add_levelc_runtime_slice_test(levelc_slice35_dynamic_for
 add_levelc_runtime_slice_test(levelc_slice35_dynamic_for_noopt
         rexx_src/levelc_slice35_dynamic_for.rexx
         "for 10 1\nto 10 2\nby 10 3\nfirst-after 1 3\nby 10 1\nto 10 2\nfor 10 3\nsecond-after 1 3\nby 10 1\nto 10 2\nfor-two 10 3\nall 1 3\nall 2 3\nafter-all 3 3\ncounted 1 3\ncounted 2 1\ncounted 3 1\nafter-counted 4 1\ndecimal 1\ndecimal 2\nafter-decimal 3\nuntil 1\nuntil 2\nafter-until 2 9\nafter-zero 1 1 0\nafter-zero-end 1 1 0\nafter-outer 3\nlocal 1\nlocal 2\n3\n" -n)
+# The same sweep's unchanged isolated replay took 3.62 s (old limit: 60 s).
 set_tests_properties(levelc_slice35_dynamic_for
-        levelc_slice35_dynamic_for_noopt PROPERTIES TIMEOUT 60)
+        levelc_slice35_dynamic_for_noopt PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
 add_levelc_runtime_slice_test(levelc_slice36_dynamic_start
         rexx_src/levelc_slice36_dynamic_start.rexx
         "start 10 1\nto 10 2\nby 10 3\nfor 10 4\nafter-zero 1 4\nchanged 2 2\nchanged 3 9\nafter-changed 4 9\nfractional -1.0\nfractional 0\nfractional 1\nafter-fractional 2 bad\nwhile 1\nwhile 2\nafter-while 3\nuntil 1\nuntil 2\nafter-until 2\nafter-outer 4\nlocal 1\nlocal 2\n3\n")
@@ -8534,6 +8550,13 @@ target_compile_definitions(test_levelc_call_host_entry PRIVATE
         CREXX_TEST_CALL_PROVIDER="${CMAKE_CURRENT_BINARY_DIR}/levelc_call_host_provider.rxbin"
         CREXX_TEST_CALL_ENTRY="${CMAKE_CURRENT_BINARY_DIR}/levelc_call_host_entry.rxbin")
 add_dependencies(test_levelc_call_host_entry levelc_call_host_entry_bin library rxfnsc)
+# Classic now owns a private native stream provider. Embedded clients select
+# the installed runtime/provider directory through the existing VM option.
+foreach(_classic_host IN ITEMS test_levelc_say_host_output test_levelc_address_host_callback
+        test_levelc_arg_host_entry test_levelc_call_host_entry)
+    target_compile_definitions(${_classic_host} PRIVATE CREXX_TEST_BINDIR="${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(${_classic_host} classlib rxfnsg cstream)
+endforeach()
 
 add_custom_command(
         OUTPUT levelc_return_status7.rxbin
@@ -8832,7 +8855,8 @@ add_test(NAME e2_active_context_isolation COMMAND test_e2_active_context)
 set_tests_properties(e2_active_context_isolation PROPERTIES LABELS "compiler;stage3")
 crexx_label_concurrency_tests(SP01 e2_active_context_isolation)
 add_test(NAME say_bytes_host_callbacks COMMAND test_say_bytes_host)
-set_tests_properties(say_bytes_host_callbacks PROPERTIES LABELS "compiler;levelc")
+set_tests_properties(say_bytes_host_callbacks PROPERTIES LABELS "compiler;levelc"
+        CREXX_PREP_TARGETS "test_say_bytes_host")
 add_test(NAME levelc_say_host_output COMMAND test_levelc_say_host_output)
 set_tests_properties(levelc_say_host_output PROPERTIES LABELS "compiler;levelc"
         CREXX_PREP_TARGETS "test_levelc_say_host_output")
@@ -9295,10 +9319,6 @@ function(crexx_force_raw_diagnostics_for_directory_tests)
     endforeach()
 endfunction()
 
-crexx_force_raw_diagnostics_for_directory_tests()
-
-crexx_finalize_directory_qa_tiers()
-
 # QUEUED shares the selected repository with the whole queue instructions.
 foreach(_bif_mode IN ITEMS opt noopt)
     if(_bif_mode STREQUAL "noopt")
@@ -9569,3 +9589,84 @@ foreach(_bif_mode IN ITEMS opt noopt)
     set_tests_properties(levelc_bif_reference_audit_linked_${_bif_mode} PROPERTIES
         LABELS "compiler;levelc" RUN_SERIAL TRUE TIMEOUT 600 CREXX_PREP_TARGETS "rxc;rxas;rxlink;rxvm;library;classlib;rxfnsc")
 endforeach()
+
+# LC-CLOSE: isolated Debug/ASan pilot measurements are recorded in the Level C
+# worklist. Keep these nested toolchain aggregates out of the broad worker pool;
+# the generous timeout protects against hangs and is not a performance target.
+foreach(_closeout_mode IN ITEMS opt noopt linked_opt linked_noopt)
+    set(_closeout_flags)
+    if(_closeout_mode MATCHES "noopt")
+        list(APPEND _closeout_flags --noopt)
+    endif()
+    if(_closeout_mode MATCHES "linked")
+        list(APPEND _closeout_flags --linked)
+    endif()
+    foreach(_closeout_family IN ITEMS expression clock)
+        set(_closeout_name classic_${_closeout_family}_contract_${_closeout_mode})
+        add_test(NAME ${_closeout_name} COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/classic_${_closeout_family}_contract.py
+            --bindir ${CMAKE_BINARY_DIR}/bin ${_closeout_flags})
+        set_tests_properties(${_closeout_name} PROPERTIES
+            LABELS "compiler;levelc;comprehensive"
+            RUN_SERIAL TRUE TIMEOUT 1200
+            CREXX_PREP_TARGETS "rxc;rxas;rxlink;rxvm;library;classlib;rxfnsc")
+    endforeach()
+    foreach(_source_level IN ITEMS b c g l)
+        set(_closeout_name source_data_contract_${_source_level}_${_closeout_mode})
+        add_test(NAME ${_closeout_name} COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/source_data_contract.py
+            --bindir ${CMAKE_BINARY_DIR}/bin --level ${_source_level} ${_closeout_flags})
+        set_tests_properties(${_closeout_name} PROPERTIES
+            LABELS "compiler;source;level${_source_level};comprehensive"
+            RUN_SERIAL TRUE TIMEOUT 600
+            CREXX_PREP_TARGETS "rxc;rxas;rxlink;rxvm;library;classlib;rxfnsc")
+    endforeach()
+endforeach()
+
+# LC-UNICODE pilot: measure the exact aggregate in Debug and ASan before
+# registering it. This opt-in target is not part of ALL or broad QA preparation.
+add_custom_target(qa-measure-classic-unicode
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/classic_unicode_contract.py
+            --bindir ${CMAKE_BINARY_DIR}/bin
+    DEPENDS rxc rxas rxlink rxvm library classlib rxfnsc rxfnsg cstream
+    VERBATIM USES_TERMINAL)
+foreach(_unicode_mode IN ITEMS noopt linked_opt linked_noopt)
+    set(_unicode_flags)
+    if(_unicode_mode MATCHES "noopt")
+        list(APPEND _unicode_flags --noopt)
+    endif()
+    if(_unicode_mode MATCHES "linked")
+        list(APPEND _unicode_flags --linked)
+    endif()
+    add_custom_target(qa-measure-classic-unicode-${_unicode_mode}
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/classic_unicode_contract.py
+                --bindir ${CMAKE_BINARY_DIR}/bin ${_unicode_flags}
+        DEPENDS rxc rxas rxlink rxvm library classlib rxfnsc rxfnsg cstream
+        VERBATIM USES_TERMINAL)
+endforeach()
+
+# Exact workload measured: Debug 366 s and macOS ASan 745 s, including host
+# build contention. Preserve generous hang protection and isolate the aggregate.
+add_test(NAME classic_unicode_contract_opt COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/classic_unicode_contract.py --bindir ${CMAKE_BINARY_DIR}/bin)
+set_tests_properties(classic_unicode_contract_opt PROPERTIES
+    LABELS "compiler;levelc;unicode;streams;comprehensive"
+    RUN_SERIAL TRUE TIMEOUT 1800
+    CREXX_PREP_TARGETS "rxc;rxas;rxlink;rxvm;library;classlib;rxfnsc;rxfnsg;cstream")
+
+add_executable(test_classic_stream_lifecycle src/test_classic_stream_lifecycle.c)
+target_link_libraries(test_classic_stream_lifecycle PRIVATE rxvml rxpashim)
+target_include_directories(test_classic_stream_lifecycle PRIVATE
+    ${CMAKE_SOURCE_DIR}/interpreter ${CMAKE_SOURCE_DIR}/avl_tree
+    ${CMAKE_SOURCE_DIR}/platform ${CMAKE_SOURCE_DIR}/utf8 ${CMAKE_SOURCE_DIR}/rxpa
+    ${CMAKE_SOURCE_DIR}/binutils/include)
+add_dependencies(test_classic_stream_lifecycle library classlib rxfnsc rxfnsg cstream)
+add_test(NAME classic_stream_lifecycle COMMAND test_classic_stream_lifecycle
+    ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/classic-stream-lifecycle.dat)
+set_tests_properties(classic_stream_lifecycle PROPERTIES
+    LABELS "compiler;levelc;unicode;streams;comprehensive"
+    RUN_SERIAL TRUE TIMEOUT 300 CREXX_PREP_TARGETS "test_classic_stream_lifecycle")
+
+# Include the late Classic fixtures and their producers in directory QA prep.
+crexx_force_raw_diagnostics_for_directory_tests()
+crexx_finalize_directory_qa_tiers()

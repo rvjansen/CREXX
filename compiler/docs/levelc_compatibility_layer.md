@@ -5,6 +5,25 @@ Review source snapshot: `c1d971502f5f0ee4804192918e77efb5f7e5d0be` (2026-10-08).
 
 The [existing worklist](../../docs/planning/release-1/levelc-compatibility-worklist.md#level-c-documentation-review-programme-2026-10-08) owns this review plan.
 
+**2026-10-08 implementation update.** The agreed LC-CLOSE phase repairs the
+Latin/ordinary Classic expression, DATE/TIME and source-diagnostic paths.
+Its authoritative plan and final qualification are in the Level C worklist.
+Unicode principles/infrastructure, source conversion semantics, host APIs,
+streams and INTERPRET remain deferred. Source is Unicode across B/C/G/L;
+non-Latin Level C code has undefined behavior pending the Unicode design.
+Dated documentation-investigation and older QA receipts below remain history.
+
+**2026-10-09 implementation update.** Adrian approved and requested the
+[Unicode/stream contract](levelc_unicode_and_streams.md), superseding the
+Unicode/stream deferral throughout this dated review. All 70 Classic names
+now have direct entries; 23 explicit Unicode BIFs reuse rxunicode. Unicode
+symbols/simple casing and fixed byte ordinals are supported; named files default
+to raw ordinals, consoles to UTF-8. PARSE LINEIN uses the new stream service.
+Existing whitespace defaults are retained. No implicit normalization or B/G/
+RexxScript policy change is introduced. LC-UNICODE owns final qualification.
+The source snapshot and older claims below retain their historical scope;
+unrelated host APIs, INTERPRET and Release 1 qualification remain open.
+
 ## 1 Scope and reading guide
 
 ### 1.1 Review snapshot and authority
@@ -46,27 +65,27 @@ Test names in the detailed sections refer to maintained fixtures and their regis
 
 Level C accepts Classic source through its own scanner, contextual parser glue and grammar, retains an authored source tree, and lowers execution into the ordinary Level B compiler AST and shared libraries. Canonical frame nodes support labels and control transfer; the downstream assembler, linker and VM remain the existing product toolchain. Chapters 3–6 explain the boundaries, and every instruction/BIF in chapters 7–8 names its actual path.
 
-The agreed scalar representation uses valid Unicode text, codepoint operations and a fixed Latin-1 ordinal bridge for byte-valued Classic conversions. RexxScript retains separate binary-capable values and its sandbox/evaluator. Adrian's later direction defers changes to Unicode/I/O compatibility across B/C/G: Unicode-caused signals or logic errors are currently undefined in this work. Existing explicit typed Unicode/codec mechanisms are described as infrastructure, not silently imported into Level C.
+The agreed scalar representation uses valid Unicode text, codepoint operations and a fixed Latin-1 ordinal bridge for byte-valued Classic conversions. RexxScript retains separate binary-capable values and its sandbox/evaluator. The approved LC-UNICODE contract now defines Unicode symbols, simple casing, byte-only errors, explicit Unicode BIFs and raw/encoded streams. B/G typed contracts and RexxScript policy retain their separate ownership.
 
 ABS, MAX, MIN, SIGN, TRUNC and FORMAT use the selected ANSI/Classic rule: round numeric operands initially under caller DIGITS. This rule applies in C and the existing B/G decimal APIs. Positional/count WHOLE arguments have the approved signed64 implementation limit; WHOLENUM radix operands remain arbitrary precision. External CALL uses the approved static fixed signature. Arbitrary external function expressions and Classic late routine lookup remain unsupported.
 
 ### 2.2 Implemented and qualified baseline
 
-The worklist records 24 accepted whole-instruction reviews, including assignment and implicit command; INTERPRET is the 25th review unit and is parked, not implemented. The direct BIF table contains 62 of the 70 Classic names plus LOWER/UPPER extensions. Every catalogued name has a separate section describing its mapping, coverage and status. A direct table entry alone does not establish conformance.
+The worklist records 24 accepted whole-instruction reviews, including assignment and implicit command; INTERPRET is the 25th review unit and is parked, not implemented. The direct BIF table now contains all 70 Classic names, LOWER/UPPER and 23 explicit Unicode extensions. Every catalogued name has a separate section describing its mapping, coverage and status. A direct table entry alone does not establish conformance.
 
-Implemented infrastructure includes shared value, stem and pool objects; activation arguments and results; numeric, TRACE, ADDRESS and condition state; the selected execution-local queue; ordinary retained source lines; and the generated English message catalog. CONDITION has admitted C/D/E/I/S and producer evidence; real host HALT remains open. SAY, queue/default input, PARSE LINEIN and ADDRESS use their existing services; they do not provide the missing Classic stream BIFs.
+Implemented infrastructure includes shared value, stem and pool objects; activation arguments and results; numeric, TRACE, ADDRESS and condition state; the selected execution-local queue; ordinary retained source lines; and the generated English message catalog. CONDITION has admitted C/D/E/I/S and producer evidence; real host HALT remains open. SAY, queues and ADDRESS retain their existing services; PARSE LINEIN and the eight Classic stream BIFs use the execution-owned Classic stream service.
 
 The retained macOS product checkpoint passed core Debug/Release builds, full normal Debug 3296/3296, 3113 unique Release correctness checks, 19 installed BIF cases and one native callback fixture, with focused maintained ASan overlays. The exact inputs, six repaired Release build-input failures, evidence reuse and unrun gates are in chapter 9 and the worklist. These are recorded test passes, not an assertion of full Classic, platform or Release 1 qualification.
 
-The documentation investigation reproduced a clock defect absent from those fixtures: in linked opt/no-opt, TIME('L') stays unchanged and TIME('E') stays zero across a one-second sleep. The pool's clock can refresh but has no production clause-boundary caller. DATE shares that state; calendar consequences are inferred rather than probed. The passing injected-clock units do not establish this integration. Chapter 10 and the DATE/TIME sections retain the reproducer and ownership.
+The documentation investigation reproduced the earlier DATE/TIME clause-clock defect. LC-CLOSE now gives each invocation a lazy frozen sample, with a program-wide elapsed/reset origin shared by internal calls; direct injectable pool harnesses remain supported. The compiled clock contract covers freshness, same-clause/nested-call consistency, private PROCEDURE pools, reset and empty-loop conditions. The worklist retains the qualified phase matrix and remaining platform-clock limits.
 
 ### 2.3 Outstanding assessment and delivery
 
-Eight recognized BIFs remain without compiled Classic entries: CHARIN, CHAROUT, CHARS, LINEIN, LINEOUT, LINES, QUALIFY and STREAM. Their complete behavioral matrices—including positions, encoding, EOF, state, errors and cleanup—are deferred pending Adrian's architecture and compatibility assessment. No stream provider is approved by this review.
+CHARIN, CHAROUT, CHARS, LINEIN, LINEOUT, LINES, QUALIFY and STREAM now have direct compiled entries and an approved raw/encoded stream contract. LC-UNICODE owns their focused, lifecycle, packaging and normal product qualification; older checkpoint receipts do not qualify the new provider.
 
-Other outstanding obligations include physical source NUL truncation and mapped-source inventory, full lexical/expression/configuration parity, real HALT and wider host invocation/pool APIs, resource/error limits, complete AST/shared-consumer closure and platform qualification. The approved practical TRACE divergences and external CALL departure are documented explicitly, including the static fixed signature. Existing PARSE representation and ADDRESS snapshot bounds are stated; the review does not invent unlimited allocation or arbitrary-size behavior.
+LC-CLOSE repairs physical source NUL truncation and the agreed expression/source diagnostics. Other outstanding obligations include full mapped-source inventory and deferred configuration/Unicode parity, real HALT and wider host invocation/pool APIs, resource/error limits, complete AST/shared-consumer closure and platform qualification. The approved practical TRACE divergences and external CALL departure are documented explicitly, including the static fixed signature. Existing PARSE representation and ADDRESS snapshot bounds are stated; the review does not invent unlimited allocation or arbitrary-size behavior.
 
-Configured BIN/HEX validator/consumer parity is a source-inspection concern, not a reproduced default-ASCII failure. SUBWORD's named unit exercises a different path from its compiled standalone entry; TRACE's pool-state unit is also distinct from its compiled activation-frame path. The evidence is attributed accordingly. Stale source comments mentioning compiler name dispatch are recorded for later cleanup; source is unchanged.
+LC-UNICODE reproduced configured BIN/HEX validator/consumer mismatches and repairs them with shared canonical digit/blank normalization in UTF8 and BYTE profiles. SUBWORD's named unit exercises a different path from its compiled standalone entry; TRACE's pool-state unit is also distinct from its compiled activation-frame path. The evidence is attributed accordingly. Stale source comments mentioning compiler name dispatch are recorded for later cleanup; source is unchanged.
 
 INTERPRET, the B/G split and fast-pipeline proposals, and the other existing gap decisions remain pending. Linux/Windows gates, full macOS sanitizer assurance, supported-platform LSan, hosted/deep/release gates and remaining Release measurements are unrun for this checkpoint. This review documents those boundaries and known issues; it fixes no code and makes no new language, ABI, VM/linker or architectural decision.
 
@@ -84,9 +103,9 @@ Regina probes are comparison evidence. Where Regina 3.9.7 differs from the appro
 
 The approved compiled scalar representation is Unicode text in Level B `.string`, with ordinary character positions counted in codepoints. The VM stores UTF-8 bytes and tracks byte length separately from character count. This does not give Classic programs implicit normalization, grapheme indexing or raw-byte strings. The implementation sources are [RexxValue](../../lib/rxfnsc/RexxValue.crexx), the [Classic configuration](../../lib/rxfnsc/RexxClassicConfig.crexx), and the [VM string architecture](../../docs/ai-context/CREXX_ARCHITECTURE.md#text-utf-8-and-binary-data).
 
-Adrian's later scope direction preserves that existing infrastructure and defers changes to Unicode/I/O compatibility until architectural assessment. Unicode characters causing signals or other logic errors are currently undefined for this compatibility work in B/C/G. The review therefore describes existing conversion rules and retained Unicode tests, but does not turn every non-ASCII failure into a promised repair or claim comprehensive Unicode compatibility.
+LC-UNICODE defines the admitted Level C Unicode boundary: ordinary operations use exact codepoint text; byte-only operations reject scalars above U+00FF; symbols use the scanner's Unicode letter authority and shared simple case mappings. Existing whitespace defaults remain. The contract does not admit arbitrary emoji/combining-mark identifiers or implicit normalization.
 
-The existing typed `.string`/`.binary` boundaries and explicit Level G Unicode APIs still explain how the product works. Their presence does not silently add those APIs to Classic Level C or settle the deferred compatibility assessment.
+The existing typed `.string`/`.binary` boundaries and explicit Level G Unicode APIs still explain how the product works. The 23 Classic adapters explicitly reuse those algorithms; their byte results use the ordinal bridge rather than the typed .binary representation.
 
 ### 3.3 Latin-1 ordinals and binary-capable RexxScript
 
@@ -156,7 +175,7 @@ Classic literals become RexxValue factories with the original text; variable rea
 
 The grammar uses left-recursive power productions. Arithmetic, integer division/remainder, strict/normal comparisons, explicit concatenation and inferred blank/abuttal concatenation have their own operator nodes. Classic AND/OR are lowered through the eager logical path, evaluating both operands in source order instead of inheriting ordinary typed short-circuit behavior. Exact logical-value checks use contextual Classic errors.
 
-`AST_SEMANTIC_CONTEXT_CLASSIC_*` records retain the Classic operation's identity around generated calls for source/TRACE reporting. The grammar and selected operator regressions cover part of the reference matrix. Special numeric values, complete error timing and optimization equivalence still need proof. Those remain LC-GAP-07/LC-REF-043–046. External function-expression support is also narrower than the CALL statement boundary.
+`AST_SEMANTIC_CONTEXT_CLASSIC_*` records retain the Classic operation's identity around generated calls for source/TRACE reporting. The grammar and selected operator regressions cover part of the reference matrix. The LC-CLOSE expression contract covers values, source-order effects, numeric contexts, Classic errors and four execution modes. Numeric/normal-comparison/logical operators now use a lean RexxBifCallContext.expression factory and shared rexxclassic_expression_binary/unary adapters; they record errors through the existing BIF transport and raise CLASSIC_SYNTAX at the authored operator. Integer divide/remainder use shared VM guard digits, working precision and DIGITS-width checks; whole powers have bounded validation and large-exponent binary reduction. Deferred configuration/Unicode/resource/platform obligations retain LC-GAP-07/LC-REF-043–046 ownership. External function-expression support is also narrower than the CALL statement boundary.
 
 ### 4.4 Source AST to canonical Level B AST
 
@@ -183,7 +202,7 @@ The immutable source snapshot retains authored layout, spans, diagnostics and se
 
 The BIF checkpoint repaired the indexed/stem setter rewrite to retain authored assignment source on its outer call. Focused TRACE, source/provider and assembly-golden checks qualified that repair. It did not establish universal optimized traceback equivalence: selected negative no-opt fixtures assert authored source, while their optimized goldens still reflect the existing panic-only output.
 
-RXPP source-map input can retain original locations for diagnostics without supplying SOURCELINE with an original physical-line inventory. Those are separate source services. Full mapped-source identity, physical source NUL, generated/helper stack traceback and broad optimized source equivalence remain LC-GAP-06.
+RXPP source-map input can retain original locations for diagnostics without supplying SOURCELINE with an original physical-line inventory. Those are separate source services. Physical NUL now survives scanning, literals/comments, imported source and retained source lines; invalid lexical positions receive explicit diagnostics. Source-map owned text has an explicit length, metadata spans require a backing buffer, and panic output renders NUL as \0 while retaining the suffix. Full mapped-source identity and broader generated/helper traceback remain LC-GAP-06.
 
 ### 4.6 Validation, optimization and emission
 
@@ -225,7 +244,7 @@ The common BIF validator normalizes NUM once. The ABS, MAX, MIN and SIGN wrapper
 
 This establishes the selected numeric BIF change; arithmetic edge cases and resource limits still have open obligations. RexxScript's public adapter and configuration remain separate from the B/G typed API.
 
-The DATE/TIME frozen-sample service lacks a production clause-refresh caller. A focused existing-toolchain probe observed TIME('L') unchanged and TIME('E') remaining zero across a one-second sleep in linked opt/no-opt. DATE shares the same cached clock, though calendar crossing was not probed. This known integration defect is detailed in 8.24 DATE / 8.56 TIME and 10.2; direct injected-clock unit passes do not qualify it.
+DATE/TIME contexts bind to the current activation. beginClauseTime invalidates its sample lazily at executed clauses and repeated condition checkpoints; ensureClauseTime samples only when a clock BIF needs it. Nested invocations retain separate samples and use the program root's elapsed origin. Direct contexts without a compiled activation retain the existing injectable pool clock. Historical diagnosis and remaining timezone/platform limits are in 8.24/8.56 and 10.2.
 
 ### 5.4 Conditions, SIGNAL, delayed CALL and TRACE
 
@@ -241,7 +260,7 @@ RexxClassicConfig forwards `pullText`, `pushText`, `queueText` and `queuedCount`
 
 The existing Level B QUERY/SET interface can select a named queue. A complete Level C/C host selection adapter is a wider host criterion, not delivered by QUEUED. [fileio](../../lib/rxfnsb/rexx/fileio.crexx) owns the current line-reader and file-cache services. PARSE LINEIN calls that default-line path, which does not make the absent LINEIN Classic BIF implemented.
 
-Retained tests cover ordering/count, named selection through the existing B API, NUL on admitted queue paths, EOF/default-input behavior and execution isolation. They do not establish the deferred stream positioning/encoding/resource matrix.
+Retained tests cover ordering/count, named selection through the existing B API, NUL on admitted queue paths, EOF/default-input behavior and execution isolation. The new Classic stream positioning/encoding/lifecycle matrix has its own LC-UNICODE tests and receipts.
 
 ### 5.6 ADDRESS environments and native interfaces
 
@@ -255,7 +274,7 @@ The installed callback fixture passed twelve callbacks and file cleanup, includi
 
 SOURCELINE retains ordinary physical source in the unit's configuration only when that BIF is used. `levelc_append_source_lines` walks the existing compiler buffer, handles CRLF/CR/LF and final lines, and calls `appendSourceLine`. Local routines share those lines; separately compiled providers retain their own unit. It does not reopen the source file at runtime.
 
-A source-mapped generated buffer has no retained original inventory and reports count zero. The existing compiler buffer is NUL-terminated, so physical source NUL truncation remains a documented source limitation. PARSE SOURCE derives system/mode/name from source metadata and program-root mode; it is not a substitute for a complete line inventory.
+A source-mapped generated buffer has no retained original inventory and reports count zero. LC-CLOSE makes scanning and retained source lengths explicit: physical NUL in literals/comments and later clauses is preserved across B/C/G/L, including imported source; invalid lexical positions receive a diagnostic. PARSE SOURCE derives system/mode/name from source metadata and program-root mode; it is not a substitute for a complete line inventory.
 
 ERRORTEXT uses the generated English diagnostic template service and converts its braces to Classic place-markers. Compiler localization/raw rendering and runtime CONDITION expansion are distinct consumers of the catalog. N currently falls back to English. Full mapped source, locale selection, all message insertion producers and full error traceback remain LC-GAP-06/LC-REF-072.
 
@@ -281,7 +300,7 @@ On POSIX the current SYSTEM route uses standard `sh -c` rather than the user's l
 
 There are several distinct text boundaries: compiler source decoding, source-line retention, VM string values, default terminal I/O, native callbacks, files and subprocess pipes. A codepoint count inside a string is not a file offset, byte length or host encoding declaration. The current platform codec converts selected external text before scanning/emission; internal UTF-8 and fixed ordinal semantics remain separate.
 
-SOURCELINE strips recognized physical line endings from retained lines. SAY preserves the length-aware value and writes its newline through the current output path. Default line input follows fileio/VM behavior. ADDRESS redirection owns its existing stream handles and completion cells, while Classic stream BIFs remain absent. Passing CRLF or NUL in one of these paths proves only that path.
+SOURCELINE strips recognized physical line endings from retained lines. SAY preserves the length-aware value and writes its newline through the current output path. Default line input follows fileio/VM behavior. ADDRESS redirection owns its existing stream handles and completion cells; Classic stream BIFs separately own execution/configuration handles and codec selection. Passing CRLF or NUL in one of these paths proves only that path.
 
 The C-string host run entry cannot carry embedded-NUL arguments; the length-aware entry can carry a length span subject to its existing text validation. ADDRESS command NUL follows its approved failure boundary. Physical source NUL/mapping is open. There is no approved raw-byte Level C stream or automatic encoding inference.
 
@@ -313,7 +332,7 @@ OS support in the code or a workflow matrix is an intended product surface. A pa
 
 Classic configuration includes character classes/blanks, exponent limits, random state, selected external pools and retained source lines. Activation state separately owns numeric, TRACE, ADDRESS and condition policy. Some configuration APIs are available to direct Level B clients but are not exposed as a complete Level C/C host adapter.
 
-Caller-selected custom character classes can reveal mismatches between validation and the consuming algorithm. The BIF chapters identify inspection observations for custom HEX/BIN separators; those are unqualified adapter risks, not a new Unicode policy or a reproduced default compiled-program failure.
+Caller-selected custom character classes can reveal mismatches between validation and the consuming algorithm. LC-UNICODE's radix_validator_parity regression reproduces and verifies shared normalization for configured HEX/BIN digits and separators. Wider custom character-policy and resource coverage retains its existing owners.
 
 The current source also checks concrete representation bounds: each frozen PARSE descriptor's item/result/dynamic-operand count fits 16 bits (at most 65,535), and generated template/entry indices must fit INT_MAX. The ADDRESS adapter bounds a named-file input snapshot to 16 MiB and closes the file on an over-limit read. These are observed implementation limits, not newly chosen Classic language rules. User-visible diagnostics and resource behavior at these large-case limits still need proof under LC-REF-025/LC-GAP-06.
 
@@ -355,10 +374,10 @@ suites. Focused review probes are identified with their own receipts.
 
 The [worklist](../../docs/planning/release-1/levelc-compatibility-worklist.md)
 owns instruction acceptance and scope decisions; the [reference obligations](../../docs/planning/release-1/levelc-reference-obligations.md)
-own the wider contract inventory. Existing Unicode tests describe retained
-behavior. Adrian has deferred changes to Unicode and I/O compatibility across
-B/C/G pending architectural assessment; Unicode-caused signals and logic
-errors are currently undefined. That boundary applies to every section below.
+own the wider contract inventory. Existing instruction receipts retain their original coverage. The approved
+LC-UNICODE contract supersedes the earlier Unicode/I/O deferral for admitted
+Level C text, symbols, byte BIFs and streams; wider reference and host obligations
+remain separate.
 
 ### 7.01 SAY (LC-I-01)
 
@@ -1169,8 +1188,7 @@ is no registered `levelc_interpret_*` execution-conformance panel and no
 successful opt/no-opt, linked or native INTERPRET qualification. LC-I-25,
 LC-87-01–05, LC-AC-59/04, LC-REF-062 and LC-GAP-01 remain open. Any future
 implementation or permanent exception requires Adrian's separate decision.
-This documentation review leaves that route pending, together with the known
-source-NUL truncation under LC-GAP-06.
+INTERPRET remains pending alongside the wider mapped-source/conversion/identity obligations under LC-GAP-06; LC-CLOSE repairs physical NUL truncation.
 
 ## 8 BIF mapping and conformance
 
@@ -1188,7 +1206,7 @@ A statement CALL resolved to a table entry uses `levelc_call_bif_statement()` an
 
 `WHOLE`, `WHOLE>=0` and `WHOLE>0` accept exact whole decimal/exponent spellings in the approved signed 64-bit range. Non-whole or out-of-range text reports `40.12`; negative/non-positive values report `40.13`/`40.14`. An in-range size is not a guarantee that a requested allocation can succeed. `NUM` normalization performs the approved initial `number + 0` under caller DIGITS and FORM; malformed numbers and configured exponent-limit failures use `40.11`/`40.9`. `WHOLENUM` radix operands retain arbitrary precision under their caller numeric rule. Section 8.28 explains the `0_90` message-code rule and ERRORTEXT's `40.17` error. Most entries return a blank `.RexxValue` with the context error set; compiled Level C converts that failure at the authored BIF site. Direct library and sandbox consumers must inspect the context or deliberately use `rexxclassicbif_checked()`.
 
-**Ownership and dialects.** These are Level B procedures packaged in [rxfnsc](../../lib/rxfnsc/CMakeLists.txt). For a standalone consumer, a call context owns its default pool and configuration objects. It can instead hold references supplied by the caller. Compiled Level C supplies a Unicode configuration shared through local calls, while PROCEDURE still controls the visible pool. The runtime's BYTE branch remains available to direct binary-capable `RexxValue` consumers. It is not a selectable compiled Level C profile. RexxScript's own intrinsic allow-list and sandbox pool remain separate. The typed decimal ABS, MAX, MIN, SIGN, TRUNC and FORMAT procedures in B/G implement the same approved ANSI rounding rule through their existing typed paths; they do not receive Classic call contexts or acquire Classic error identities. Unicode-caused signals and logic errors in B/C/G remain undefined under Adrian's deferred compatibility assessment; the current codepoint and Latin-1 mechanisms are observations and retained direction, not a new conformance promise.
+**Ownership and dialects.** These are Level B procedures packaged in [rxfnsc](../../lib/rxfnsc/CMakeLists.txt). For a standalone consumer, a call context owns its default pool and configuration objects. It can instead hold references supplied by the caller. Compiled Level C supplies a Unicode configuration shared through local calls, while PROCEDURE still controls the visible pool. The runtime's BYTE branch remains available to direct binary-capable `RexxValue` consumers. It is not a selectable compiled Level C profile. RexxScript's own intrinsic allow-list and sandbox pool remain separate. The typed decimal ABS, MAX, MIN, SIGN, TRUNC and FORMAT procedures in B/G implement the same approved ANSI rounding rule through their existing typed paths; they do not receive Classic call contexts or acquire Classic error identities. The approved LC-UNICODE contract defines the admitted Level C Unicode and byte-ordinal behavior; B/G and RexxScript retain their separate typed and sandbox contracts.
 
 **Coverage and status.** [The functional CMake list](../../lib/rxfnsc/tests_functional/CMakeLists.txt) registers the named runtime units as `_noopt` and `_opt`. [CrexxTestModes.cmake](../../cmake/CrexxTestModes.cmake) runs ordinary no-opt multi-module loading and links optimized images before execution. These library units test the runtime contract, not raw-AST or authored-source lowering; SUBWORD and TRACE have the specific path distinctions documented below.
 
@@ -1204,7 +1222,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [testRexxClassicBifAbbrev.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifAbbrev.crexx), registered as `testRexxClassicBifAbbrev_opt` and `_noopt`, checks case sensitivity, minimum/default, empty strings, missing/extra operands, omissions and numeric failures, plus separate text and BYTE examples. The compiled `levelc_unicode_character_bifs`/`_noopt` fixture checks the codepoint prefix; `levelc_bif_reference_audit_{opt,noopt}` and `levelc_bif_reference_audit_linked_{opt,noopt}` check three ASCII cases against the retained reference golden. `levelc_bif_integer_limits_*` also exercises the largest accepted minimum without allocation.
 
-**Status.** Implemented and covered on the admitted baseline. This does not qualify every configured character table or all resource limits. `LC-GAP-02/08`, `LC-REF-009/012/025` own that wider proof. Unicode-caused signals or logic errors remain undefined under Adrian's current B/C/G scope.
+**Status.** Implemented and covered on the admitted baseline. This does not qualify every configured character table or all resource limits. `LC-GAP-02/08`, `LC-REF-009/012/025` own that wider proof. The admitted Unicode operations follow LC-UNICODE; wider configured/resource obligations remain open.
 
 ### 8.02 ABS
 
@@ -1224,7 +1242,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [testRexxClassicBifAddress.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifAddress.crexx) checks defaults, all connection selectors, option/count errors, inherited pool state, changing STREAM-name values and environment swap/reset. The compiled [levelc_address_whole.rexx](../tests/rexx_src/levelc_address_whole.rexx) and related opt/no-opt, linked and host-callback ADDRESS tests check invocation-local behavior. A pool-only unit pass alone would not establish the frame path or stream transport.
 
-**Status.** The query BIF is implemented on the admitted ADDRESS state. Complete configured environment/stream initialization and transport remain under `LC-GAP-03/05`, `LC-REF-003/015/018/058`. This query does not close the deferred stream BIFs or a wider host ABI.
+**Status.** The query BIF is implemented on the admitted ADDRESS state. Complete configured environment/stream initialization and transport remain under `LC-GAP-03/05`, `LC-REF-003/015/018/058`. This query does not close the separate Classic stream contract or a wider host ABI.
 
 ### 8.04 ARG
 
@@ -1240,7 +1258,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Contract.** `B2X(binaryDigits)` requires `rBIN`: this is textual binary-digit syntax, not an arbitrary binary buffer. It returns uppercase hexadecimal, removes permitted grouping blanks, and left-pads the first group to a nibble; empty input returns empty text. Invalid binary grouping/digits report `40.24`, besides the common count/omission errors.
 
-**AST and implementation.** `FUNCTION(B2X, actual)` lowers to `rexxclassicbifb2x.rexxclassicbif_b2x` with the common context. [RexxClassicBifB2x.crexx](../../lib/rxfnsc/RexxClassicBifB2x.crexx) validates via `RexxClassicDatatype`, then accumulates four bits at a time using `STRCHAR` and an uppercase hex table. The converter's loop directly skips ASCII blank and subtracts ASCII zero. The shared datatype validator can recognize configured extra blank/digit sets; complete end-to-end conversion with those sets is not established by the ordinary ASCII tests. This is an inspection concern, not a newly reproduced defect or an approved change.
+**AST and implementation.** `FUNCTION(B2X, actual)` lowers to `rexxclassicbifb2x.rexxclassicbif_b2x` with the common context. [RexxClassicBifB2x.crexx](../../lib/rxfnsc/RexxClassicBifB2x.crexx) validates via `RexxClassicDatatype`, then accumulates four bits at a time using `STRCHAR` and an uppercase hex table. The shared CheckArgs validator canonicalizes configured digits and removes validated blanks before the ASCII converter consumes them. The radix_validator_parity regression covers UTF8 and BYTE inputs.
 
 **Evidence.** [testRexxClassicBifB2x.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifB2x.crexx) in both modes covers short first groups, exact/padded nibbles, grouping, empty input, 256 bits, leading/trailing/wrong-group blanks, bad digits, tab rejection and count/omission errors. The four `levelc_bif_reference_audit_*` cases include grouped, one-bit and empty B2X. Shared DATATYPE tests exercise additional configuration recognition, but do not prove this converter consumes those configured characters correctly.
 
@@ -1304,7 +1322,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [testRexxClassicBifCenter.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifCenter.crexx) covers odd/even padding and truncation, zero/empty widths, custom pad, Unicode/BYTE differences and all argument categories, in both optimizer modes. The compiled character-BIF panel checks `.é.`; the four reference-audit modes include padded `CENTER('abc',6,'.')`. Signed-range validation is shared; these tests do not prove all in-range allocations are feasible.
 
-**Status.** Implemented and baseline-audited. Complete configured-character proof remains `LC-GAP-02/08`, `LC-REF-009/012`; resource limits remain `LC-GAP-02/06`, `LC-REF-025`; Unicode-caused problems are within the deferred assessment.
+**Status.** Implemented and baseline-audited. Complete configured-character proof remains `LC-GAP-02/08`, `LC-REF-009/012`; resource limits remain `LC-GAP-02/06`, `LC-REF-025`; the admitted Unicode boundary is defined by LC-UNICODE.
 
 ### 8.12 CENTRE
 
@@ -1328,27 +1346,27 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 ### 8.14 CHARIN
 
-**Contract awaiting implementation.** The retained Classic target is `CHARIN([stream [,position [,count]]])`, with checklist `oSTREAM oWHOLE>0 oWHOLE>=0`. It uses default input or the default stream, defaults count to one, and permits optional positioning. Count zero touches the stream while returning empty text. Bounds/non-positionable errors `40.41/40.42`, NOTREADY and EOF/short-read behavior belong to the stream contract. The existing guide's target is not a current executable BIF promise.
+**Current contract (2026-10-09).** Optional name, positive character position and nonnegative count (default one). Reads ordinals/codepoints; zero count consumes nothing. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** `CHARIN` is recognized in `levelc_ansi_bif_names` in [rxcpcsym.c](../rxcpcsym.c), and an ordinary expression parses as `FUNCTION` with expression/`NOVAL` children. It has no `levelc_direct_bifs` row in [rxcp_levelc_lower.c](../rxcp_levelc_lower.c); absent a user local function, the expression support check rejects it as an unsupported Level C function call. There is no `RexxClassicBifCharin` or approved Classic stream provider. Existing [fileio.crexx](../../lib/rxfnsb/rexx/fileio.crexx), PARSE LINEIN/default-input services and VM channels are infrastructure to assess, not a conformant lowering substituted for this name.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_charin` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** Recognition is source-inspected; the dead-branch `levelc_bif_inventory` fixture does not include CHARIN and proves no I/O behavior. No maintained compiled Classic CHARIN matrix qualifies named/default streams, EOF, position, NUL, encoding or cleanup. `LC-GAP-02/03/05/08`, `LC-REF-018/019/020` own the gap. Adrian deferred stream work and changes to Unicode/I/O infrastructure pending a compatibility and architectural assessment; the proposed RXPA provider remains unapproved and is not documented as an available ABI.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.15 CHAROUT
 
-**Contract awaiting implementation.** The retained Classic target is `CHAROUT([stream [,string [,position]]])`, checklist `oSTREAM oANY oWHOLE>0`. It writes characters, can position the stream first, and reports the unwritten character count. Omitting the string has special close or end-position behavior. Stream-position errors `40.41/40.42`, NOTREADY, partial writes and resource lifecycle need one assessed contract. A supplied empty string must not be confused with an omitted string. These are target obligations, not current cREXX results.
+**Current contract (2026-10-09).** Optional name, text and positive character position. Returns unwritten codepoints. Omitted text with a position only positions; otherwise it closes. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** Recognition in [rxcpcsym.c](../rxcpcsym.c) and raw `FUNCTION`/`NOVAL` parsing exist. There is no direct table entry or `RexxClassicBifCharout`; absent a local routine, the compiled expression is rejected by `levelc_direct_bif_supported`. Current B file conveniences, SAY output, ADDRESS redirection and channel/socket support have separate semantics and ownership. None is silently remapped into Classic CHAROUT, and no dispatcher, VM/linker change or new host ABI has been approved.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_charout` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** Existing Level B file/channel tests can support an infrastructure assessment but do not qualify this missing BIF's return value, partial-write, positioning, close, named/default stream, line ending, encoding or NUL behavior. `LC-GAP-02/03/05/08`, `LC-REF-018/019/020` remain open. The user expressly deferred this work; no code fix or new I/O direction is part of the documentation review.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.16 CHARS
 
-**Contract awaiting implementation.** The retained Classic target is `CHARS([stream [,option]])`, with checklist `oSTREAM oCN`. It reports remaining character availability or count according to the stream and option. Default/named stream selection, an immediately available count, buffered versus persistent resources, and error/EOF state must be assessed with the stream provider. `STREAM` qualification (`40.27`) and first-character option validation are target rules, not currently connected runtime checks for CHARS.
+**Current contract (2026-10-09).** Optional name and C/N/I option. C/N count remaining persistent scalars; I indicates availability. Transient streams report availability. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** [rxcpcsym.c](../rxcpcsym.c) recognizes CHARS and the parser forms the ordinary `FUNCTION` and omitted-position nodes. [rxcp_levelc_lower.c](../rxcp_levelc_lower.c)'s direct table has no CHARS entry, so a nonlocal function expression cannot be lowered. There is no current Classic count service with a documented codepoint/ordinal, positioning and lifecycle contract. A Level B byte length or filesystem size must not be described as the Classic character count without that assessment.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_chars` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** No maintained compiled CHARS behavior matrix is present in the BIF baseline. Entry recognition does not prove count correctness, EOF or resource cleanup. The eight absent stream BIFs are grouped under `LC-GAP-02/03/08`, `LC-REF-018/019`; implementation remains deferred by Adrian with the other stream/Unicode infrastructure questions.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.17 COMPARE
 
@@ -1424,11 +1442,11 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Contract.** `DATE([option [,date [,inoption]]])` uses `oBDEMNOSUW oANY oBDENOSU`. Omission defaults output/input format to N. Without a supplied date it formats the current frozen local clause date; with a date it converts the exact declared input syntax. B is base-day count, D day of year, E European, M month name, N normal date, O ordered, S sortable, U US and W weekday. Input forms exclude M/W. A supplied input option without a date, an invalid calendar value, range or format, or a noncanonical spelling reports `40.19`; ordinary option errors remain `40.21/40.28`. The two-digit year window is based on the captured current year.
 
-**AST and implementation.** `FUNCTION(DATE, ...)` lowers to `rexxclassicbifdate.rexxclassicbif_date` in [RexxClassicBifDate.crexx](../../lib/rxfnsc/RexxClassicBifDate.crexx). It reads `context.callerPool()`, calls `ensureClauseTime`, and accesses `clauseBaseDay`; `RexxDateTimeState` in [RexxClassicState.crexx](../../lib/rxfnsc/RexxClassicState.crexx) samples existing VM TIME/MTIME/XTIME services. Gregorian helpers `_datefromjdn`, `_jdn`, `_datevalid` and `_leapyear` are imported from the existing runtime. The BIF validates by parsing and exact round-trip formatting, including years 1–9999/base days 0–3652058. Reading may initialize the pool's clause clock; it does not reset TIME elapsed state.
+**AST and implementation.** `FUNCTION(DATE, ...)` lowers to `rexxclassicbifdate.rexxclassicbif_date` in [RexxClassicBifDate.crexx](../../lib/rxfnsc/RexxClassicBifDate.crexx). It uses the call context's `ensureClauseTime` and `clauseBaseDay`, selecting the compiled activation or direct harness pool; `RexxDateTimeState` in [RexxClassicState.crexx](../../lib/rxfnsc/RexxClassicState.crexx) samples existing VM TIME/MTIME/XTIME services. Gregorian helpers `_datefromjdn`, `_jdn`, `_datevalid` and `_leapyear` are imported from the existing runtime. The BIF validates by parsing and exact round-trip formatting, including years 1–9999/base days 0–3652058. Reading may initialize the pool's clause clock; it does not reset TIME elapsed state.
 
 **Evidence.** [testRexxClassicBifDate.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifDate.crexx) injects a deterministic clause date and checks every output, leap day, current-year window edges, exact case/width, invalid day and missing input, opt/no-opt. The four reference-audit modes add compiled/linked explicit-date conversion proof. `levelc_bif_config_lifecycle` tests RANDOM configuration, not clock refresh. Deterministic DATE injection does not qualify real clause-boundary sampling, every OS timezone, DST transition or host clock failure.
 
-**Status.** Explicit-date conversion and injected-sample formatting are implemented and audited. Source inspection finds no production call to `RexxVariablePool.beginClauseTime()` in the compiler/shared runtime/RexxScript path. `ensureClauseTime()` sets `date_time_ready` once and does not refresh a ready pool. An ordinary Release linked probe on the reviewed snapshot confirms the shared-clock integration defect: after an ADDRESS SYSTEM one-second sleep, TIME(L) is unchanged and TIME(E) remains zero in optimized and no-opt cREXX, while Regina advances. DATE shares that ready flag and sample. The effect on date freshness and the current-year window is inferred from this shared path; no calendar-boundary crossing was probed. `LC-GAP-02/03/04`, `LC-REF-003/020/057` own clock/host lifecycle assessment; OS timezone/DST proof remains open. The worklist retains the exact probe receipt; no code repair is part of this review.
+**Status.** Explicit conversion and injected calendar samples remain implemented. LC-CLOSE repairs the shared compiled clock defect with lazy activation-local clause samples, bound DATE/TIME contexts and a program-wide elapsed/reset origin. The compiled clock contract checks date consistency alongside time freshness and nested lifetimes. The earlier TIME failing probe is historical; live midnight/year/DST transitions, timezone/platform extremes and clock failures remain unqualified under LC-GAP-02/03/04 and LC-REF-003/020/057. The worklist retains the old diagnosis and new qualification evidence.
 
 ### 8.25 DELSTR
 
@@ -1538,31 +1556,31 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [testRexxClassicBifLength.crexx](../../lib/rxfnsc/tests_functional/testRexxClassicBifLength.crexx), opt/no-opt, covers empty/ASCII/non-ASCII/supplementary characters, a decomposed combining sequence, BYTE contrast, argument preservation and all call-shape failures. `levelc_slice3_bif_length`, the character-BIF panel and four reference-audit modes provide compiled proof, including a three-character value with embedded NUL. The inventory fixture's dead calls are recognition proof only.
 
-**Status.** Implemented and baseline-audited with codepoint/NUL examples. Whole-program source/host/configuration proof remains `LC-GAP-02/06/08`, `LC-REF-007/009/012/013/025`. Physical source NUL truncation is a separate known source defect and cannot be inferred fixed from runtime LENGTH preserving NUL.
+**Status.** Implemented and baseline-audited with codepoint/NUL examples. Whole-program source/host/configuration proof remains `LC-GAP-02/06/08`, `LC-REF-007/009/012/013/025`. Physical source NUL is separately covered by the LC-CLOSE source contract; runtime LENGTH tests alone do not establish that compiler behavior.
 
 ### 8.36 LINEIN
 
-**Contract awaiting implementation.** The reference target is `LINEIN([stream [,line [,count]]])`: omitted stream means default input, a supplied positive line position selects a line, omitted count means one, and zero count returns empty text after the required stream operation. Count greater than one needs `40.39`; positioning/mode failures and NOTREADY need the stream contract's `40.41`/`40.42` and condition state. This is a target contract from [the Classic BIF guide](levelc_classic_bifs.md), not current Level C functionality.
+**Current contract (2026-10-09).** Optional name, line position and zero/one count. Removes LF and an immediately preceding CR; retains unterminated final lines. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** A `LINEIN(...)` expression is an ordinary raw `FUNCTION` (§8.00), but LINEIN is absent from `levelc_direct_bifs` and has no standalone `RexxClassicBifLinein` module. The lowerer rejects it unless the source declares a local routine with that name. [Level B fileio](../../lib/rxfnsb/rexx/fileio.crexx) has a convenience `linein` routine and `RexxClassicConfig.lineinText()` calls its default-input form for the separately implemented PARSE LINEIN source. Neither path supplies this BIF's optional stream/position/count validation or a complete Classic stream-state service.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_linein` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** PARSE LINEIN and Level B file tests establish their own default-input/file behavior. They do not qualify this missing BIF's named/default streams, EOF, line endings, position changes, encoding/NUL, NOTREADY fields, cleanup or context isolation. No direct/linked Classic LINEIN BIF regression exists. Implementation and all those checks remain deferred under LC-STEP-90B, LC-GAP-02/03 and LC-REF-018/019; Adrian has not approved the proposed stream provider.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.37 LINEOUT
 
-**Contract awaiting implementation.** The target is `LINEOUT([stream [,string [,line]]])`: write the supplied string and a line ending, optionally position first, and return zero for success or one when a line cannot be written. Omitted text has its own close/position behavior; it must remain distinct from an explicitly empty line. The target checklist is `oSTREAM oANY oWHOLE>0`, with positioning/mode and NOTREADY handling still to be defined through the approved host contract.
+**Current contract (2026-10-09).** Optional name, text and line position. Writes encoded LF and returns zero/one. Omitted text positions or closes. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** LINEOUT has generic `FUNCTION` syntax but no direct table entry and no Classic runtime module. [fileio.crexx](../../lib/rxfnsb/rexx/fileio.crexx) exports a typed Level B `lineout` convenience function; existing default output and ADDRESS connection services are additional infrastructure, not an implementation of the complete Classic BIF. No canonical Classic LINEOUT call is currently generated.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_lineout` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** Level B line-output tests cannot establish Classic omissions, default versus named resources, line positioning, platform line endings, error identities/source, stream state or finalization. Direct/linked opt/no-opt LINEOUT BIF proof is absent. Keep LC-GAP-02/03 and LC-REF-018/019 open. The assessment of stream architecture and compatibility remains pending; this document does not select a replacement I/O API.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.38 LINES
 
-**Contract awaiting implementation.** `LINES([stream [,option]])` is intended to query a stream's remaining-line availability/count. The target checklist `oSTREAM oCN` requires the agreed interpretation of C/N, including when an availability query may legally return zero. It must query state without unexpectedly consuming a line or changing position. Those are pending reference/host obligations, not satisfied current behavior.
+**Current contract (2026-10-09).** Optional name and C/N/I option. Counts remaining persistent lines without consuming them; transient streams report availability. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** LINES is absent from the direct table and has no standalone Classic module. The [Level B `lines` function](../../lib/rxfnsb/rexx/fileio.crexx) shares that library's pending-line state with its `linein`; its existence does not provide configuration stream qualification, positioning and C/N semantics. An ordinary Classic `LINES(...)` expression fails the supported-function guard.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_lines` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** No maintained compiled Classic BIF fixture covers count/availability across default/named streams, EOF, line endings, seek, encoding/NUL or repeated/interleaved queries. Existing Level B file tests remain evidence for the typed helper alone. LC-STEP-90B, LC-GAP-02/03 and LC-REF-018/019 own implementation and platform-specific availability proof, deferred by Adrian.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.39 MAX
 
@@ -1606,11 +1624,11 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 ### 8.43 QUALIFY
 
-**Contract awaiting implementation.** `QUALIFY([stream])` is intended to return a qualified stream name with the reference's persistent resource association. Omission selects the configured default stream. The pending `oSTREAM` check depends on stream qualification; an OS path normalization helper alone cannot establish the Classic resource contract.
+**Current contract (2026-10-09).** Optional stream name. Returns the host absolute path; an empty/default name returns empty. NUL names are rejected. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** Generic FUNCTION syntax is recognized, but QUALIFY has no direct table entry and no `RexxClassicBifQualify` module. There is no approved Level C lowering to a host qualification interface. Existing filesystem/platform helpers do not qualify this BIF merely because they can form a pathname.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_qualify` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** Default/named resource identity, relative names, invalid/unavailable resources, platform path rules, aliases, lifetime and stream interaction have no maintained Classic QUALIFY BIF proof. The whole feature remains LC-STEP-90B, LC-GAP-02/03 and LC-REF-019. Adrian deferred the architecture/compatibility choice; no new host ABI or path semantics is selected here.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.44 QUEUED
 
@@ -1668,9 +1686,9 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **AST and implementation.** The direct entry `rexxclassicbifsourceline.rexxclassicbif_sourceline` is in [RexxClassicBifSourceline.crexx](../../lib/rxfnsc/RexxClassicBifSourceline.crexx). During program construction, `levelc_append_source_lines()` in [the lowerer](../rxcp_levelc_lower.c) walks `Context.buff_start`/`buff_end`, recognizes CRLF/CR/LF, and emits `RexxClassicConfig.appendSourceLine()` calls only when this BIF is used. The configuration owns the retained strings. Local routines share their unit's configuration; separately compiled Classic routine providers initialize their own inventory. Generated source-map input is deliberately not treated as an original inventory, so its count is zero.
 
-**Evidence.** [`testRexxClassicBifSourceline`](../../lib/rxfnsc/tests_functional/testRexxClassicBifSourceline.crexx) checks unavailable source, appended comments/blanks, normalized/omitted index, extra omitted slots and `40.12`/`40.14`/`40.34`. `levelc_bif_sourceline_{opt,noopt}`, CRLF companions and linked pairs preserve original physical lines and authored error source. The external CALL provider fixture adds separately compiled source isolation (LC-STEP-90D receipt). The source scan stops at physical NUL; mapped source is unavailable. These are known current limits, owned by LC-GAP-06 and LC-REF-002/007/072. The ordinary-source BIF increment is audited; full source-service conformance is open.
+**Evidence.** [`testRexxClassicBifSourceline`](../../lib/rxfnsc/tests_functional/testRexxClassicBifSourceline.crexx) checks unavailable source, appended comments/blanks, normalized/omitted index, extra omitted slots and `40.12`/`40.14`/`40.34`. `levelc_bif_sourceline_{opt,noopt}`, CRLF companions and linked pairs preserve original physical lines and authored error source. The external CALL provider fixture adds separately compiled source isolation (LC-STEP-90D receipt). LC-CLOSE adds length-aware physical source scanning and the four-mode source-data contract, including NUL in retained lines and separately compiled providers. Mapped source remains unavailable, owned by LC-GAP-06 and LC-REF-002/007/072. The ordinary-source BIF increment is audited; full source-service conformance is open.
 
-**Status.** Implemented for retained ordinary physical source; mapped inputs are unavailable and physical NUL truncates the current scan.
+**Status.** Implemented for retained ordinary physical source, including embedded NUL; mapped inputs remain unavailable. Final-input qualification is retained in the LC-CLOSE worklist.
 
 ### 8.50 SPACE
 
@@ -1684,11 +1702,11 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 ### 8.51 STREAM
 
-**Contract awaiting implementation.** The target `STREAM(stream [,operation [,command]])` queries or controls a qualified stream. Operation defaults to S; S returns READY/NOTREADY/UNKNOWN/ERROR, D returns descriptive state, and C submits a command. The three-argument command form requires its operation and text. Legal command vocabulary, state transitions after failed I/O, invalid combinations, resource lifetime and detailed errors depend on the pending stream adapter and platform contract.
+**Current contract (2026-10-09).** Required name, optional S/D/C and command. Implements state/description, OPEN/CLOSE and documented QUERY commands. ENCODING selects explicit external conversion. See [the shared contract](levelc_unicode_and_streams.md) for defaults, encodings, positions, EOF and failures.
 
-**AST and infrastructure boundary.** STREAM has generic FUNCTION syntax but no direct entry, Classic implementation or approved canonical host-service call. Existing ADDRESS stream connections and typed file operations solve different contracts and must not be described as STREAM support. This review approves no VM or linker change and no new RXPA stream provider.
+**AST and implementation.** The ordinary FUNCTION/NOVAL shape lowers through levelc_direct_bifs to `rexxclassicbif_stream` in [RexxClassicBifStream.crexx](../../lib/rxfnsc/RexxClassicBifStream.crexx). RexxClassicConfig retains state; RexxClassicStream owns scalar/line/codec policy; private rxcstream owns native handles through checked C RXPA factories. PARSE LINEIN uses the same input service.
 
-**Evidence and status.** No direct/linked opt/no-opt Classic STREAM fixture proves open/close/status/query commands, default/named handles, seek, counts, EOF, encoding/NUL, NOTREADY fields, cleanup or isolation. These remain LC-STEP-90B, LC-GAP-02/03 and LC-REF-018/019/020. Adrian's architecture/compatibility assessment owns the decision; the target reference guide cannot serve as executed evidence.
+**Evidence/status.** `classic_unicode_contract_opt` and its opt-in no-opt/linked modes covers the family through the compiler, assembler, linker and VM. The LC-UNICODE plan/receipt owns exact inputs and Debug/Release/ASan, ownership/static/installed/portable proof. Entry presence is not full Classic, resource-limit or platform qualification. Older deferral/absence claims are superseded for this family; wider host/API obligations remain separately open.
 
 ### 8.52 STRIP
 
@@ -1696,7 +1714,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **AST and implementation.** `rexxclassicbifstrip.rexxclassicbif_strip` in [RexxClassicBifStrip.crexx](../../lib/rxfnsc/RexxClassicBifStrip.crexx) uses forward/reverse nonblank scans for omitted char and exact indexed comparison for a supplied char. The text result is a substring; direct BYTE mode uses `rexxclassic_byte_slice()`. The result is library-owned value data, with no host state or native handle.
 
-**Evidence.** [`testRexxClassicBifStrip`](../../lib/rxfnsc/tests_functional/testRexxClassicBifStrip.crexx) covers first-letter/case options, omitted versus explicit char, edge-only stripping, empty/all-char strings, configured BYTE blanks, long runs, count/omission and invalid options/PAD. Compiler reference and Unicode-character panels reach the direct entry. Default Unicode blank classes are an existing departure documented by source/tests; Unicode-caused errors/logic are currently undefined. LC-GAP-02 and LC-REF-008/009/012/025 retain exhaustive character/configuration/resource proof.
+**Evidence.** [`testRexxClassicBifStrip`](../../lib/rxfnsc/tests_functional/testRexxClassicBifStrip.crexx) covers first-letter/case options, omitted versus explicit char, edge-only stripping, empty/all-char strings, configured BYTE blanks, long runs, count/omission and invalid options/PAD. Compiler reference and Unicode-character panels reach the direct entry. Default Unicode blank classes are an existing departure documented by source/tests; LC-UNICODE retains that default and defines admitted Unicode behavior. LC-GAP-02 and LC-REF-008/009/012/025 retain exhaustive character/configuration/resource proof.
 
 **Status.** Implemented; complete configured blank/source parity and resource-limit proof remains open.
 
@@ -1734,11 +1752,11 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Contract.** `TIME([option [,time [,inoption]]])` uses `oCEHLMNORS oANY oCHLMNS`. N is the default output/input option. C gives a 12-hour clock, H/M/S numeric components/totals, L six fractional digits, N normal time, E elapsed, R elapsed with origin reset, and O local-to-UTC offset in microseconds. Explicit conversion to E/R/O fails `40.29`. A supplied input option without time, invalid input, or noncanonical round-trip spelling fails `40.19`; option/count errors use the common validator.
 
-**AST and implementation.** `rexxclassicbiftime.rexxclassicbif_time` in [RexxClassicBifTime.crexx](../../lib/rxfnsc/RexxClassicBifTime.crexx) obtains its caller pool and calls `ensureClauseTime()`. [RexxDateTimeState](../../lib/rxfnsc/RexxClassicState.crexx) obtains local/standard/time-zone samples using the existing VM `mtime`, `time` and `xtime` operations and retains elapsed origin in the pool's date/time state. Parsing/formatting is Level B code. It does not add a clock provider or change platform APIs.
+**AST and implementation.** `rexxclassicbiftime.rexxclassicbif_time` in [RexxClassicBifTime.crexx](../../lib/rxfnsc/RexxClassicBifTime.crexx) uses context `ensureClauseTime()` and clock queries bound to its caller activation (or the direct harness pool). [RexxDateTimeState](../../lib/rxfnsc/RexxClassicState.crexx) obtains local/standard/time-zone samples using the existing VM `mtime`, `time` and `xtime` operations and retains a program-wide elapsed origin for compiled internal calls; direct pool harnesses retain their existing state. Parsing/formatting is Level B code. It does not add a clock provider or change platform APIs.
 
-**Evidence.** [`testRexxClassicBifTime`](../../lib/rxfnsc/tests_functional/testRexxClassicBifTime.crexx) injects deterministic date/local/UTC/offset samples; it checks every output family, conversions, elapsed/reset after explicit reinjection, bad inputs/options and missing time. It also checks that a direct BIF lazily freezes a live sample. The compiled reference panel checks a fixed conversion through all four execution modes. A targeted temporary probe on the existing Release product at the reviewed revision calls TIME(E)/TIME(L), executes an ordinary `ADDRESS SYSTEM` sleep, then calls TIME(L)/TIME(E) again. Both linked opt and no-opt cREXX runs retain identical timestamps and elapsed zero; the Regina probe advances both. The production call-path search finds no caller of `RexxVariablePool.beginClauseTime()` in tracked compiler, exit, library or evaluator sources: `ensureClauseTime()` samples only while `date_time_ready` is false.
+**Evidence.** [`testRexxClassicBifTime`](../../lib/rxfnsc/tests_functional/testRexxClassicBifTime.crexx) injects deterministic date/local/UTC/offset samples; it checks every output family, conversions, elapsed/reset after explicit reinjection, bad inputs/options and missing time. It also checks that a direct BIF lazily freezes a live sample. The compiled reference panel checks a fixed conversion through all four execution modes. The earlier documentation review ran a targeted temporary probe on the Release product at that revision calls TIME(E)/TIME(L), executes an ordinary `ADDRESS SYSTEM` sleep, then calls TIME(L)/TIME(E) again. Both linked opt and no-opt cREXX runs retained identical timestamps and elapsed zero; the Regina probe advanced both. That revision's production call-path search found no caller of `RexxVariablePool.beginClauseTime()` in tracked compiler, exit, library or evaluator sources: `ensureClauseTime()` samples only while `date_time_ready` is false.
 
-**Status.** TIME is implemented but has this reproduced clause-clock defect. The injected unit's advancing elapsed values do not qualify compiler clause-boundary refresh. The documentation-review receipt in the worklist retains `/tmp/crexx-levelc-doc-clock.x18y6bki/probe.log` and `receipt.json`; no permanent test or repair is added here. LC-GAP-02/04 and LC-REF-057 own refresh/lifecycle work; time-zone/DST/midnight/platform extremes remain unqualified.
+**Status.** LC-CLOSE repairs the compiled clause-clock defect with activation-local samples and program-wide elapsed/reset ownership. `classic_clock_contract_*` checks later-clause freshness, same-clause/nested-call consistency, private pools, reset and empty-loop conditions. Existing injected conversion/calendar units remain separate evidence. The earlier failing documentation probe is retained as history; final-input qualification is in the worklist. Time-zone/DST/live calendar crossings and platform clock failures remain unqualified under LC-GAP-02/04 and LC-REF-057.
 
 ### 8.57 TRACE
 
@@ -1848,7 +1866,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [`testRexxClassicBifX2b`](../../lib/rxfnsc/tests_functional/testRexxClassicBifX2b.crexx) covers upper/lowercase hex, odd first groups, legal internal blanks, leading zeros, empty/substantial text, invalid leading/trailing/group blanks, invalid digits/tab and count/omission failures. Reference opt/no-opt/direct/linked cases check normal digits.
 
-**Status.** X2B is implemented. Source inspection also identifies an unqualified custom-configuration mismatch: HEX validation can accept configured extra blanks/digits, while this conversion body recognizes only ASCII hex and space. The current default compiled configuration is unaffected; no new reproducer was run here. LC-GAP-02, LC-REF-010/014/025 own adapter parity/resource proof, and the observation must not be promoted to full configured conformance.
+**Status.** X2B is implemented on the fixed ordinal contract. Shared CheckArgs normalizes configured HEX digits/blanks before ASCII consumption; radix_validator_parity verifies UTF8 and BYTE parity. Wider resource, numeric and host obligations retain their existing LC-GAP/LC-REF owners.
 
 ### 8.68 X2C
 
@@ -1858,7 +1876,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [`testRexxClassicBifX2c`](../../lib/rxfnsc/tests_functional/testRexxClassicBifX2c.crexx) checks empty/odd/grouped inputs, text/BYTE flags, FF, all 256 ordinal conversions and invalid HEX/count/omission. Compiled Latin-1/reference panels add direct-path values and out-of-range behavior where applicable.
 
-**Status.** X2C is implemented on the fixed bridge. The shared decoder consumes only ASCII hex/space while HEX validation permits configured extra blanks/digits; custom-context parity is an inspection-only concern, as for X2B. LC-GAP-02, LC-REF-010/011/014/025 retain that proof and wider ordinal/resource/host integration; it is not a binary-profile selector for compiled Level C.
+**Status.** X2C is implemented on the fixed ordinal contract. Shared CheckArgs normalizes configured HEX digits/blanks before ASCII consumption; radix_validator_parity verifies UTF8 and BYTE parity. Wider resource, numeric and host obligations retain their existing LC-GAP/LC-REF owners.
 
 ### 8.69 X2D
 
@@ -1868,7 +1886,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [`testRexxClassicBifX2d`](../../lib/rxfnsc/tests_functional/testRexxClassicBifX2d.crexx) covers empty/unsigned/signed values, clipped/extended/zero widths, 64/96-bit magnitudes, maximum signed width, DIGITS overflow and HEX/count/omission/WHOLE/negative/over-limit errors. The reference audit and SAY-BIF panel reach compiled conversion; reference cases have four modes.
 
-**Status.** X2D is implemented; custom configured HEX blanks/digits versus ASCII-only conversion is the inspection-only parity concern above. LC-GAP-02/07, LC-REF-010/014/025/053 retain full configured/numeric/resource proof.
+**Status.** X2D is implemented on the fixed ordinal contract. Shared CheckArgs normalizes configured HEX digits/blanks before ASCII consumption; radix_validator_parity verifies UTF8 and BYTE parity. Wider resource, numeric and host obligations retain their existing LC-GAP/LC-REF owners.
 
 ### 8.70 XRANGE
 
@@ -1878,17 +1896,17 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 **Evidence.** [`testRexxClassicBifXrange`](../../lib/rxfnsc/tests_functional/testRexxClassicBifXrange.crexx) checks default 256 length/endpoints, omitted endpoints, ordinary/wrapping ranges, FF/NUL text conversion, out-of-Latin-1, PAD and excess-count errors. Compiled Latin-1 and reference fixtures check wrap/range values; opt/no-opt Latin-1 cases and four-mode reference execution supplement the units.
 
-**Status.** XRANGE is implemented on the retained bridge, with complete error/context/host qualification still LC-GAP-02 and LC-REF-010–013. Unicode-caused errors remain undefined under Adrian's later assessment boundary.
+**Status.** XRANGE is implemented on the retained bridge, with complete error/context/host qualification still LC-GAP-02 and LC-REF-010–013. Scalars above U+00FF receive SYNTAX 23.1 under LC-UNICODE.
 
 ### 8.71 LOWER and UPPER extensions
 
 **Contract.** LOWER(string) and UPPER(string) are two additional direct names outside the 70-name Classic catalogue. Both use `rANY`, require exactly one supplied argument, return case-mapped text and share count/omission/value-boundary errors. They are current cREXX extensions; Classic TRANSLATE's uppercase behavior does not make LOWER a catalogued Classic BIF. No normalization or grapheme behavior is promised.
 
-**AST and implementation.** Their direct table rows have no standalone import module and call `rexxclassicbifs.rexxclassicbif_lower`/`rexxclassicbif_upper` in [RexxClassicBifs.crexx](../../lib/rxfnsc/RexxClassicBifs.crexx). Those entries run the common validator and invoke existing `lower()`/`upper()` text helpers, returning a RexxValue. These bodies materialize text even for a direct BYTE-configured context; arbitrary binary case mapping is not established. The ordinary FUNCTION lowering/caller context/error route is unchanged.
+**AST and implementation.** Their direct table rows have no standalone import module and call `rexxclassicbifs.rexxclassicbif_lower`/`rexxclassicbif_upper` in [RexxClassicBifs.crexx](../../lib/rxfnsc/RexxClassicBifs.crexx). Those entries run the common validator and shared pinned simple Unicode mapping for UTF8 contexts; BYTE contexts retain the existing `lower()`/`upper()` text helpers. They return a RexxValue. These bodies materialize text even for a direct BYTE-configured context; arbitrary binary case mapping is not established. The ordinary FUNCTION lowering/caller context/error route is unchanged.
 
 **Evidence.** [`testRexxClassicBifs`](../../lib/rxfnsc/tests_functional/testRexxClassicBifs.crexx) calls the named shared entries and checks ASCII Mixed/MIXED/mixed results. `levelc_unicode_character_bifs[_noopt]` reaches the compiled extensions with scalar examples; `levelc_bif_inventory` admits them in an unreached branch and proves compilation only. The runtime units include optimized linked execution and no-opt loading under the common matrix.
 
-**Status.** These are implemented extensions with limited case/value proof, not extra Classic conformance entries. Full configured case mapping, BYTE semantics and Unicode compatibility remain LC-GAP-02/08 and LC-REF-008/012/013 under the existing infrastructure/deferred assessment; no change is made here.
+**Status.** These are implemented extensions with limited case/value proof, not extra Classic conformance entries. LC-UNICODE verifies the admitted simple Unicode mapping, including changes in UTF-8 width. Wider configured/BYTE/resource obligations remain LC-GAP-02/08 and LC-REF-008/012/013.
 
 ## 9 Test coverage and conformance evidence
 
@@ -1896,7 +1914,7 @@ Compiler fixtures `levelc_bif_shadow[_noopt]`, `levelc_bif_syntax_signal[_noopt]
 
 The worklist retains IBM/Classic rule decisions and Regina 3.9.7 probes, including one maintained 104-value ASCII BIF fixture. It separates the approved reduced-DIGITS ANSI rounding rule from Regina's preserved-operand results. The test files and expected outputs in chapter 8 show which calls were compared; a count of expected lines does not make an exhaustive reference corpus.
 
-Earlier Unicode/Latin-1 instruction/BIF receipts label departures from byte-exact Classic behavior. Unicode-caused signals and logic errors remain undefined in this compatibility work; this document does not classify them as conformant. No new external-reference verdict is inferred from a helper implementation or a manual example.
+Earlier Unicode/Latin-1 instruction/BIF receipts label departures from byte-exact Classic behavior. LC-UNICODE now defines the admitted Unicode extensions explicitly; those extensions must be named when comparing processors. No new external-reference verdict is inferred from a helper implementation or a manual example.
 
 ### 9.2 Retained local product qualification
 
@@ -1916,13 +1934,13 @@ Broad builds and tests did not overlap. Their parallelism was bounded by observe
 
 Per-instruction fixtures check raw and canonical trees, invalid-source diagnostics, runtime values and state, optimized/no-opt behavior, linked execution and native callbacks where applicable. Per-name BIF units exercise algorithms directly; compiled fixtures verify the authored Classic error bridge and caller context. Linked/provider tests check unit isolation and external integration through the approved static fixed signature. The final suite includes B/G/L and RexxScript checks so a shared-runtime change is not assessed only through a Classic example.
 
-Coverage is not uniform. A direct harness can supply configuration that compiled source does not expose. Some live host producers remain absent even when controlled events pass. No-opt authored source assertions do not imply universal optimized traceback parity. Evidence for instructions using ordinary default input does not establish LINEIN or the other deferred stream BIFs. The detailed sections state these distinctions individually.
+Coverage is not uniform. A direct harness can supply configuration that compiled source does not expose. Some live host producers remain absent even when controlled events pass. No-opt authored source assertions do not imply universal optimized traceback parity. The new stream service has its own LC-UNICODE contract and receipts; older default-input evidence retains its original scope. The detailed sections state these distinctions individually.
 
 ### 9.4 What remains unverified
 
-The complete 70-name BIF contract is open because eight stream names are absent and wider source/host/resource/reference obligations remain. INTERPRET is recognized but parked. Full lexical, expression and configuration equivalence, real host HALT, source mapping and physical NUL handling, host pool and invocation APIs, and the final Release 1 exclusions remain unfinished.
+All 70 names have direct entries. Full reference conformance remains open through wider source/host/resource/reference obligations. INTERPRET is recognized but parked. Full lexical, expression and configuration equivalence, real host HALT, full source mapping, host pool and invocation APIs, and the final Release 1 exclusions remain unfinished.
 
-Unrun platform gates and unsupported sanitizer facilities are listed in 6.5. Passing existing Unicode cases does not settle the deferred architecture/compatibility assessment. Tests that were interrupted or failed before repair remain historical failures, not successful gates. Documentation inspection introduces no additional passed execution evidence.
+Unrun platform gates and unsupported sanitizer facilities are listed in 6.5. The new Unicode cases qualify their stated LC-UNICODE boundary, without claiming full platform or reference conformance. Tests that were interrupted or failed before repair remain historical failures, not successful gates. Documentation inspection introduces no additional passed execution evidence.
 
 ## 10 Known issues and pending decisions
 
@@ -1937,7 +1955,7 @@ The [remaining-gap register](../../docs/planning/release-1/levelc-compatibility-
 | LC-GAP-03 | Complete command/stream/default-input/queue/external-routine host adapters |
 | LC-GAP-04 | Host invocation modes, trap overrides, completion/pool access and real HALT |
 | LC-GAP-05 | Remaining ADDRESS-NUL transport and practical TRACE/PARSE-source disposition |
-| LC-GAP-06 | Full source/lexer/mapping/NUL/traceback and diagnostic identity |
+| LC-GAP-06 | Wider mapped-source/conversion/configuration/resource/traceback and diagnostic identity |
 | LC-GAP-07 | Full expression/numeric/logical/condition interaction equivalence |
 | LC-GAP-08 | Complete Unicode/Latin-1 source, BIF, host and cross-consumer proof; later explicit Unicode/binary design |
 | LC-GAP-09 | Complete AST/source/semantic crosswalk and lowered-shape closure |
@@ -1945,19 +1963,19 @@ The [remaining-gap register](../../docs/planning/release-1/levelc-compatibility-
 
 Approved boundaries, such as external CALL with its static fixed signature or practical TRACE, have their exact effects documented in the relevant detailed sections. A gap is not automatically closed because its supporting instruction review was accepted.
 
-### 10.2 Documentation discrepancies and new observations
+### 10.2 Historical documentation investigation and observations
 
 The review found stale current-status statements alongside valid historical design notes. The guide reconciliation updates current counts, signatures and producer evidence while retaining dated receipts. It does not silently turn an old planned helper into an implemented host service.
 
 | ID | Finding and evidence class | Current effect / owner |
 | --- | --- | --- |
-| LC-DOC-ISSUE-01 | Reproduced TIME clause-clock defect; DATE shares the inspected clock path | No clause refresh in a persistent visible pool; TIME long/elapsed results remain cached. LC-GAP-02/04, LC-REF-057. |
+| LC-DOC-ISSUE-01 | Earlier TIME clause-clock defect; DATE shared the cache | Repaired in LC-CLOSE by activation samples/program elapsed state; final qualification and platform limits are owned by the worklist. |
 | LC-DOC-OBS-02 | External function-expression boundary, source and maintained negative fixture | External CALL works through the approved static fixed signature; arbitrary external FUNCTION expressions are rejected. LC-GAP-03/04/07. |
-| LC-DOC-OBS-03 | Configured BIN/HEX validation/consumption mismatch, source inspection only | Validators accept custom digits/blanks that consuming loops do not normalize. Default ASCII calls are unaffected by this observation; custom adapter behavior needs a reproducer/assessment. LC-GAP-02/08, LC-REF-008/010/014. |
+| LC-DOC-OBS-03 | Configured BIN/HEX mismatch reproduced and repaired by LC-UNICODE | Shared CheckArgs canonicalization aligns the consumer with validated UTF8/BYTE digits and blanks. radix_validator_parity is the permanent regression. Wider configuration/resource coverage remains LC-GAP-02/08, LC-REF-008/010/014. |
 | LC-DOC-OBS-04 | SUBWORD/TRACE direct-unit path differs from compiler path, inspected coverage | SUBWORD's unit exercises the legacy common body, while compiled tests cover the standalone entry. TRACE's unit exercises pool state, while compiled matrices exercise activation state. Broader error/configuration equivalence is not independently covered by the unit alone. LC-GAP-02. |
 | LC-DOC-OBS-05 | Current guides retain pre-BIF/pre-instruction status, document inspection | QUEUED/SOURCELINE/ERRORTEXT/CONDITION status, ARG/TRACE checklists and empty-needle descriptions were reconciled in this review; historical slices remain labelled history. Wider AST/reference crosswalk proof stays LC-GAP-09. |
 
-**Reproducer for LC-DOC-ISSUE-01.** On the recorded macOS Release product, the following ordinary ASCII Level C program crosses real execution time between clauses:
+**Historical reproducer for LC-DOC-ISSUE-01 (before LC-CLOSE).** On the recorded macOS Release product, the following ordinary ASCII Level C program crosses real execution time between clauses:
 
 ```rexx
 say 'START='time('E')
@@ -1969,7 +1987,7 @@ say 'END='time('E')
 
 Both linked modes printed identical FIRST and SECOND values and END=0. Regina 3.9.7 printed different timestamps and END=1.137237 in the retained run. The tools were rxc (with and without -n), rxas, rxlink with library/classlib/rxfnsc, and rxvm from the existing ordinary Release build. Literal argv, source and output are in `/tmp/crexx-levelc-doc-clock.x18y6bki/receipt.json` and `probe.log`; the worklist retains the essential diagnosis and next action. SYSTEM sleep is a host-specific probe, not a portable language feature.
 
-Both DATE and TIME call `ensureClauseTime`, which freezes the first sample while `date_time_ready` stays set. `beginClauseTime` can refresh the existing state but has no identified production caller in compiler/rxfnsc/RexxScript. Thus the clock defect is distinct from working explicit-date/time conversion and injected-clock formatting tests. DATE shares the cache; its consequences for calendar days and year windows are inferences from the source, and a midnight/year crossing was not probed. No repair or new host service is included in this review.
+At the documentation-review revision, DATE and TIME called `ensureClauseTime`, freezing the first sample while `date_time_ready` stayed set. `beginClauseTime` had no identified production caller in compiler/rxfnsc/RexxScript. Thus that clock defect was distinct from working explicit-date/time conversion and injected-clock formatting tests. DATE shares the cache; its consequences for calendar days and year windows are inferences from the source, and a midnight/year crossing was not probed. That documentation review made no repair; the later LC-CLOSE implementation replaces the compiled clock ownership without adding a host service.
 
 SUBWORD/TRACE coverage differences and configured BIN/HEX observations are described in their per-name sections. These distinctions are reasons for focused future investigation, not additional failed gates invented from an unexecuted case.
 

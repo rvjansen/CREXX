@@ -23,7 +23,8 @@
  */
 
 options levelb comments_dash numeric_classic
-namespace rexxclassicbifs expose RexxBifCallContext rexxclassicbif_checked rexxclassic_signal_record rexxclassic_signal_event_id rexxclassicbif_call rexxclassicbif_check_args rexxclassicbif_check_variadic rexxclassicbif_set_error rexxclassic_symbol_kind rexxclassicbif_abbrev rexxclassicbif_abs rexxclassicbif_bitand rexxclassicbif_bitor rexxclassicbif_bitxor bitand bitor bitxor rexxclassicbif_copies rexxclassicbif_datatype rexxclassicbif_left rexxclassicbif_length rexxclassicbif_lower rexxclassicbif_max rexxclassicbif_min rexxclassicbif_pos rexxclassicbif_right rexxclassicbif_sign rexxclassicbif_space rexxclassicbif_strip rexxclassicbif_substr rexxclassicbif_subword rexxclassicbif_upper rexxclassicbif_verify rexxclassicbif_word rexxclassicbif_words
+namespace rexxclassicbifs expose RexxBifCallContext rexxclassic_expression_binary rexxclassic_expression_unary rexxclassicbif_checked rexxclassic_signal_record rexxclassic_signal_event_id rexxclassicbif_call rexxclassicbif_check_args rexxclassicbif_check_variadic rexxclassicbif_set_error rexxclassic_symbol_kind rexxclassicbif_abbrev rexxclassicbif_abs rexxclassicbif_bitand rexxclassicbif_bitor rexxclassicbif_bitxor bitand bitor bitxor rexxclassicbif_copies rexxclassicbif_datatype rexxclassicbif_left rexxclassicbif_length rexxclassicbif_lower rexxclassicbif_max rexxclassicbif_min rexxclassicbif_pos rexxclassicbif_right rexxclassicbif_sign rexxclassicbif_space rexxclassicbif_strip rexxclassicbif_substr rexxclassicbif_subword rexxclassicbif_upper rexxclassicbif_verify rexxclassicbif_word rexxclassicbif_words
+import rexxclassicunicodeproperties
 import rexxvalue
 import rexxpool
 import rexxclassicconfig
@@ -39,9 +40,8 @@ import rxfnsb
 /**
  * Direct Classic-compatible BIF functions and shared call support.
  *
- * New library harnesses call the specific exported BIF functions directly.
- * The name-based compatibility dispatcher remains only for current compiler
- * output and is removed in the later bulk Level C lowering change.
+ * Compiled Level C and library harnesses call exported BIF entries directly.
+ * The name-based dispatcher remains for legacy compatibility tests.
  *
  * @docType bif-module
  * @sandbox RexxScript adapters use an explicit allow-list and sandbox pool
@@ -64,10 +64,15 @@ RexxBifCallContext: class
   bif_arg_count = .int
   owned_pool = .RexxVariablePool
   caller_pool_ref = reference .RexxVariablePool
+  has_caller_pool = .boolean
+  caller_activation_ref = reference .RexxActivationArguments
+  has_caller_activation = .boolean
   owned_config = .RexxClassicConfig
   config_ref = reference .RexxClassicConfig
   error_code = .string
   error_message = .string
+  stream_condition_id = .int
+  stream_condition_description = .string
 
   *: factory
     arg name = .string
@@ -75,8 +80,20 @@ RexxBifCallContext: class
     bif_arg_count = 0
     owned_pool = .RexxVariablePool()
     caller_pool_ref = reference owned_pool
+    has_caller_pool = 1
     owned_config = .RexxClassicConfig()
     config_ref = reference owned_config
+    has_caller_activation = 0
+    error_code = ""
+    error_message = ""
+    return
+
+  /** Call-local expression error transport; no unused pool/config allocation. */
+  expression: factory
+    arg name = .string
+    bif_name = translate(name)
+    has_caller_activation = 0
+    has_caller_pool = 0
     error_code = ""
     error_message = ""
     return
@@ -130,20 +147,93 @@ RexxBifCallContext: class
   setCallerPool: method = .void
     arg pool = reference .RexxVariablePool
     caller_pool_ref = pool
+    has_caller_pool = 1
+    config = dereference config_ref
+    current = dereference caller_pool_ref
+    call current.setUnicodeNames(\config.isByteProfile())
     return
 
   callerPool: method = reference .RexxVariablePool
     return caller_pool_ref
 
+  /** Bind compiled clock queries to the current Classic invocation. */
+  setCallerActivation: method = .void
+    arg activation = reference .RexxActivationArguments
+    caller_activation_ref = activation
+    has_caller_activation = 1
+    return
+
+  /** Direct library harnesses retain the existing injectable pool clock. */
+  ensureClauseTime: method = .void
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      call activation.ensureClauseTime()
+    end
+    else do
+      pool = dereference caller_pool_ref
+      call pool.ensureClauseTime()
+    end
+    return
+
+  clauseBaseDay: method = .int
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      return activation.clauseBaseDay()
+    end
+    pool = dereference caller_pool_ref
+    return pool.clauseBaseDay()
+
+  clauseLocalMicroseconds: method = .int
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      return activation.clauseLocalMicroseconds()
+    end
+    pool = dereference caller_pool_ref
+    return pool.clauseLocalMicroseconds()
+
+  clauseUtcMicroseconds: method = .int
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      return activation.clauseUtcMicroseconds()
+    end
+    pool = dereference caller_pool_ref
+    return pool.clauseUtcMicroseconds()
+
+  clauseOffsetMicroseconds: method = .int
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      return activation.clauseOffsetMicroseconds()
+    end
+    pool = dereference caller_pool_ref
+    return pool.clauseOffsetMicroseconds()
+
+  clauseElapsedMicroseconds: method = .int
+    arg reset = .boolean
+    if has_caller_activation then do
+      activation = dereference caller_activation_ref
+      return activation.clauseElapsedMicroseconds(reset)
+    end
+    pool = dereference caller_pool_ref
+    return pool.clauseElapsedMicroseconds(reset)
+
   setCharacterConfig: method = .void
     arg config = .RexxClassicConfig
     owned_config = config
     config_ref = reference owned_config
+    if has_caller_pool then do
+      pool = dereference caller_pool_ref
+      call pool.setUnicodeNames(\config.isByteProfile())
+    end
     return
 
   setConfig: method = .void
     arg config = reference .RexxClassicConfig
     config_ref = config
+    if has_caller_pool then do
+      current = dereference config_ref
+      pool = dereference caller_pool_ref
+      call pool.setUnicodeNames(\current.isByteProfile())
+    end
     return
 
   characterConfig: method = .RexxClassicConfig
@@ -159,14 +249,35 @@ RexxBifCallContext: class
   configReference: method = reference .RexxClassicConfig
     return config_ref
 
+  /** Record NOTREADY for source-anchored SIGNAL/CALL delivery by the lowerer. */
+  streamNotReady: method = .void
+    arg name = .string
+    stream_condition_id = 5
+    stream_condition_description = name
+    return
+
+  conditionId: method = .int
+    return stream_condition_id
+
+  conditionDescription: method = .string
+    return stream_condition_description
+
   useByteProfile: method = .void
     config = dereference config_ref
     call config.useByteProfile()
+    if has_caller_pool then do
+      pool = dereference caller_pool_ref
+      call pool.setUnicodeNames(0)
+    end
     return
 
   useUtf8Profile: method = .void
     config = dereference config_ref
     call config.useUtf8Profile()
+    if has_caller_pool then do
+      pool = dereference caller_pool_ref
+      call pool.setUnicodeNames(1)
+    end
     return
 
   setByteOtherBlanks: method = .void
@@ -184,6 +295,8 @@ RexxBifCallContext: class
   clearError: method = .void
     error_code = ""
     error_message = ""
+    stream_condition_id = 0
+    stream_condition_description = ""
     return
 
   setError: method = .void
@@ -209,6 +322,168 @@ RexxBifCallContext: class
   errorDetail: method = .string
     if error_message <> "" then return error_message
     return error_code
+
+/**
+ * Evaluate one Classic binary operator using the shared RexxValue primitive.
+ * Errors are returned in the existing call context so the compiler can raise
+ * SYNTAX at the authored operator. Typed consumers keep their own signals.
+ * @param context_ref call-local context with operator name and caller config
+ * @param left source-ordered left operand
+ * @param right source-ordered right operand
+ * @return operator value, or an empty value with a recorded Classic error
+ */
+rexxclassic_expression_binary: procedure = .RexxValue
+  numeric digits inherited
+  numeric fuzz inherited
+  numeric form inherited
+  arg context_ref = reference .RexxBifCallContext, left = .RexxValue, right = .RexxValue
+  context = dereference context_ref
+  op = context.name()
+  call context.clearError()
+  left_text = left.asString(1)
+  right_text = right.asString(1)
+  symbol = _expression_operator(op)
+  if op = "LOGICALAND" | op = "LOGICALOR" | op = "LOGICALXOR" then do
+    if left_text \== "0" & left_text \== "1" then
+      return _expression_error(context_ref,"34.5",symbol,left_text,right_text)
+    if right_text \== "0" & right_text \== "1" then
+      return _expression_error(context_ref,"34.6",symbol,right_text,left_text)
+    if op = "LOGICALAND" then return left.logicalAnd(right)
+    if op = "LOGICALOR" then return left.logicalOr(right)
+    return left.logicalXor(right)
+  end
+  config = context.characterConfig()
+  left_state = 0
+  right_state = 0
+  normalized_left = rexxclassic_datatype_normalize_number(left,config,left_state)
+  normalized_right = rexxclassic_datatype_normalize_number(right,config,right_state)
+  compare = left(op,7) = "COMPARE"
+  if \compare | (left_state > 0 & right_state > 0) then do
+    if left_state = 2 then return _expression_error(context_ref,"41.7",symbol,left_text,right_text)
+    if right_state = 2 then return _expression_error(context_ref,"41.7",symbol,right_text,left_text)
+    if left_state = 0 then return _expression_error(context_ref,"41.1",symbol,left_text,right_text)
+    if right_state = 0 then return _expression_error(context_ref,"41.2",symbol,right_text,left_text)
+    left = .RexxValue(normalized_left)
+    right = .RexxValue(normalized_right)
+  end
+  if op = "DIVIDE" | op = "INTEGERDIVIDE" | op = "REMAINDER" then do
+    if right.asDecimal(1) = 0 then return _expression_error(context_ref,"42.3",symbol,left_text,right_text)
+  end
+  if op = "POWER" then do
+    if \rexxclassic_datatype_number_is_whole(normalized_right) then
+      return _expression_error(context_ref,"26.8",symbol,right_text,left_text)
+  end
+  do
+    select
+      when op = "ADD" then return left.add(right,1)
+      when op = "SUBTRACT" then return left.subtract(right,1)
+      when op = "MULTIPLY" then return left.multiply(right,1)
+      when op = "DIVIDE" then return left.divide(right,1)
+      when op = "INTEGERDIVIDE" then return left.integerDivide(right,1)
+      when op = "REMAINDER" then return left.remainder(right,1)
+      when op = "POWER" then return left.power(right,1)
+      when op = "COMPAREEQUAL" then return left.compareEqual(right,1)
+      when op = "COMPARENOTEQUAL" then return left.compareNotEqual(right,1)
+      when op = "COMPAREGREATERTHAN" then return left.compareGreaterThan(right,1)
+      when op = "COMPARELESSTHAN" then return left.compareLessThan(right,1)
+      when op = "COMPAREGREATEROREQUAL" then return left.compareGreaterOrEqual(right,1)
+      when op = "COMPARELESSOREQUAL" then return left.compareLessOrEqual(right,1)
+      otherwise do
+        assembler signal "INVALID_ARGUMENTS", "Unknown Classic expression operator"
+      end
+    end
+  on signal division_by_zero
+    return _expression_error(context_ref,"42.3",symbol,left_text,right_text)
+  on signal conversion_error
+    if op = "INTEGERDIVIDE" then return _expression_error(context_ref,"26.11",symbol,left_text,right_text)
+    if op = "REMAINDER" then return _expression_error(context_ref,"26.12",symbol,left_text,right_text)
+    if op = "POWER" then return _expression_error(context_ref,"26.8",symbol,right_text,left_text)
+    return _expression_error(context_ref,"41.1",symbol,left_text,right_text)
+  on signal overflow_underflow as problem
+    code = "42.1"
+    if pos("Underflow",problem.message()) > 0 then code = "42.2"
+    return _expression_error(context_ref,code,symbol,left_text,right_text)
+  end
+  return .RexxValue("")
+
+/**
+ * Evaluate one prefix operator, preserving the caller numeric context.
+ * @param context_ref call-local error/configuration context
+ * @param value already evaluated operand
+ * @return prefix value, or an empty value with a recorded Classic error
+ */
+rexxclassic_expression_unary: procedure = .RexxValue
+  numeric digits inherited
+  numeric fuzz inherited
+  numeric form inherited
+  arg context_ref = reference .RexxBifCallContext, value = .RexxValue
+  context = dereference context_ref
+  op = context.name()
+  call context.clearError()
+  text = value.asString(1)
+  symbol = "+"
+  if op = "NEGATE" then symbol = "-"
+  if op = "LOGICALIFVALUE" | op = "LOGICALWHENVALUE" | op = "LOGICALWHILEVALUE" | op = "LOGICALUNTILVALUE" then do
+    code = "34.1"
+    if op = "LOGICALWHENVALUE" then code = "34.2"
+    if op = "LOGICALWHILEVALUE" then code = "34.3"
+    if op = "LOGICALUNTILVALUE" then code = "34.4"
+    if text \== "0" & text \== "1" then return _expression_error(context_ref,code,"",text,"")
+    return value
+  end
+  if op = "LOGICALNOT" then do
+    if text \== "0" & text \== "1" then return _expression_error(context_ref,"34.6","\",text,"")
+    return value.logicalNot()
+  end
+  config = context.characterConfig()
+  state = 0
+  normalized = rexxclassic_datatype_normalize_number(value,config,state)
+  if state = 2 then return _expression_error(context_ref,"41.7",symbol,text,"")
+  if state = 0 then return _expression_error(context_ref,"41.3",symbol,text,"")
+  value = .RexxValue(normalized)
+  do
+    if op = "NEGATE" then return value.negate(1)
+    return value.positive(1)
+  on signal conversion_error
+    return _expression_error(context_ref,"41.3",symbol,text,"")
+  on signal overflow_underflow as problem
+    arithmetic_code = "42.1"
+    if pos("Underflow",problem.message()) > 0 then arithmetic_code = "42.2"
+    return _expression_error(context_ref,arithmetic_code,symbol,text,"")
+  end
+  return .RexxValue("")
+
+/** Return the reference spelling of an internal operator method name. */
+_expression_operator: procedure = .string
+  arg op = .string
+  select
+    when op = "ADD" then return "+"
+    when op = "SUBTRACT" then return "-"
+    when op = "MULTIPLY" then return "*"
+    when op = "DIVIDE" then return "/"
+    when op = "INTEGERDIVIDE" then return "%"
+    when op = "REMAINDER" then return "//"
+    when op = "POWER" then return "**"
+    when op = "LOGICALAND" then return "&"
+    when op = "LOGICALOR" then return "|"
+    when op = "LOGICALXOR" then return "&&"
+    otherwise return "="
+  end
+  return "="
+
+/** Preserve standard named inserts and repeated values for the shared catalog. */
+_expression_error: procedure = .RexxValue
+  numeric digits inherited
+  arg context_ref = reference .RexxBifCallContext, code = .string, op = .string, value = .string, other = .string
+  context = dereference context_ref
+  identity = "RXC-LC-" || code
+  message = identity || " operator=" || _quote_insert(op) || " operation=" || _quote_insert(op)
+  message = message || " value=" || _quote_insert(value) || " value=" || _quote_insert(other)
+  digits_value = .int
+  assembler getnumdgts digits_value
+  message = message || " value=" || _quote_insert(digits_value || "")
+  call context.setError(identity,message)
+  return .RexxValue("")
 
 /**
  * Deliver a validated direct BIF result to a Level C caller.
@@ -243,7 +518,7 @@ rexxclassic_signal_record: procedure = .void
   arg pool_ref = reference .RexxVariablePool, activation_ref = reference .RexxActivationArguments, condition = .runtime_signal
   pool = dereference pool_ref
   activation = dereference activation_ref
-  call pool.setSymbolValue("SIGL", .RexxValue.fromInt(condition.line()))
+  call pool.setSignalLine(condition.line())
   if condition.name() = "CLASSIC_SYNTAX" then do
     detail = condition.message()
     number = "0"
@@ -266,8 +541,10 @@ rexxclassic_signal_record: procedure = .void
       else code = tail
       point = pos(".", code)
       if point > 1 then number = substr(code, 1, point - 1)
+      else if datatype(code,"W") then number = code
     end
     call pool.setSymbolValue("RC", .RexxValue(number))
+    call pool.setSymbolValue(".MN", .RexxValue(code))
     call activation.recordCondition(1, description, code, "SIGNAL")
   end
   else if condition.name() = "CLASSIC_CONDITION" then do
@@ -383,7 +660,7 @@ rexxclassic_signal_event_id: procedure = .int
   return event.conditionId()
 
 /**
- * Dispatch one Classic-compatible BIF call for existing compiler output.
+ * Dispatch one Classic-compatible BIF call for legacy compatibility clients.
  *
  * @deprecated compatibility-only; direct BIF entry points are the library API
  * @param context call context reference containing the function name,
@@ -543,7 +820,10 @@ _check_arg_type: procedure = .int
     return 0
   end
 
-  value = context.argumentText(index)
+  value = .string
+  if config.isByteProfile() & argument_value.hasBinary() & \argument_value.hasText() then
+    value = rexxclassic_latin1_to_text(argument_value.asBinary())
+  else value = context.argumentText(index)
 
   if rule = "SYM" then do
     if rexxclassic_datatype_symbol_kind(argument_value,config) <> 1 then do
@@ -618,6 +898,7 @@ _check_arg_type: procedure = .int
       call _set_bif_error(context_ref, "40.24", index, value, "")
       return 0
     end
+    call context.setArgumentText(index,rexxclassic_datatype_normalize_radix(argument_value,config))
     return 1
   end
 
@@ -626,6 +907,7 @@ _check_arg_type: procedure = .int
       call _set_bif_error(context_ref, "40.25", index, value, "")
       return 0
     end
+    call context.setArgumentText(index,rexxclassic_datatype_normalize_radix(argument_value,config))
     return 1
   end
 
@@ -733,7 +1015,7 @@ rexxclassicbif_abbrev: procedure = .RexxValue
   source = context.argumentText(1)
   abbrev = context.argumentText(2)
   minlen = 0
-  if context.argumentExists(3) then minlen = context.argumentText(3) + 0
+  if context.argumentExists(3) then minlen = (context.argumentText(3) as .int)
   result = 0
   if length(abbrev) >= minlen then do
     if substr(source, 1, length(abbrev)) = abbrev then result = 1
@@ -939,7 +1221,7 @@ rexxclassicbif_copies: procedure = .RexxValue
   context = dereference context_ref
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>=0") = 0 then return _context_error(context_ref)
-  return _ok(copies(context.argumentText(1), context.argumentText(2) + 0))
+  return _ok(copies(context.argumentText(1), (context.argumentText(2) as .int)))
 
 /**
  * Classifies a value or tests it against a Classic DATATYPE option.
@@ -983,7 +1265,7 @@ rexxclassicbif_left: procedure = .RexxValue
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>=0 oPAD") = 0 then return _context_error(context_ref)
   source = context.argumentText(1)
-  width = context.argumentText(2) + 0
+  width = (context.argumentText(2) as .int)
   pad = _arg_or(context_ref, 3, " ")
   if width = 0 then return _ok("")
   if width <= length(source) then return _ok(substr(source, 1, width))
@@ -1021,7 +1303,9 @@ rexxclassicbif_lower: procedure = .RexxValue
   context = dereference context_ref
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY") = 0 then return _context_error(context_ref)
-  return _ok(lower(context.argumentText(1)))
+  config = context.characterConfig()
+  if config.isByteProfile() then return _ok(lower(context.argumentText(1)))
+  return _ok(rexxclassic_unicode_lower(context.argumentText(1)))
 
 /**
  * Returns the maximum numeric argument.
@@ -1118,7 +1402,7 @@ rexxclassicbif_pos: procedure = .RexxValue
   needle = context.argumentText(1)
   haystack = context.argumentText(2)
   start = 1
-  if context.argumentExists(3) then start = context.argumentText(3) + 0
+  if context.argumentExists(3) then start = (context.argumentText(3) as .int)
   if length(needle) = 0 then return _ok("0")
   found = .rxfnsb..pos(needle, haystack, start)
   return _ok(found || "")
@@ -1140,7 +1424,7 @@ rexxclassicbif_right: procedure = .RexxValue
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>=0 oPAD") = 0 then return _context_error(context_ref)
   source = context.argumentText(1)
-  width = context.argumentText(2) + 0
+  width = (context.argumentText(2) as .int)
   pad = _arg_or(context_ref, 3, " ")
   if width = 0 then return _ok("")
   if width <= length(source) then return _ok(substr(source, length(source) - width + 1, width))
@@ -1186,7 +1470,7 @@ rexxclassicbif_space: procedure = .RexxValue
   if rexxclassicbif_check_args(context_ref, "rANY oWHOLE>=0 oPAD") = 0 then return _context_error(context_ref)
   source = context.argumentText(1)
   count = 1
-  if context.argumentExists(2) then count = context.argumentText(2) + 0
+  if context.argumentExists(2) then count = (context.argumentText(2) as .int)
   pad = _arg_or(context_ref, 3, " ")
   word_count = words(source)
   if word_count = 0 then return _ok("")
@@ -1233,11 +1517,11 @@ rexxclassicbif_substr: procedure = .RexxValue
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>0 oWHOLE>=0 oPAD") = 0 then return _context_error(context_ref)
   source = context.argumentText(1)
-  start = context.argumentText(2) + 0
+  start = (context.argumentText(2) as .int)
   source_len = length(source)
 
   if context.argumentExists(3) then do
-    wanted = context.argumentText(3) + 0
+    wanted = (context.argumentText(3) as .int)
     pad = _arg_or(context_ref, 4, " ")
     if wanted = 0 then return _ok("")
     if start > source_len then return _ok(copies(pad, wanted))
@@ -1265,10 +1549,10 @@ rexxclassicbif_subword: procedure = .RexxValue
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>0 oWHOLE>=0") = 0 then return _context_error(context_ref)
 
-  start = context.argumentText(2) + 0
+  start = (context.argumentText(2) as .int)
   count_supplied = context.argumentExists(3)
   wordcount = 0
-  if count_supplied then wordcount = context.argumentText(3) + 0
+  if count_supplied then wordcount = (context.argumentText(3) as .int)
   if count_supplied & wordcount = 0 then return _ok("")
 
   config = context.characterConfig()
@@ -1376,7 +1660,9 @@ rexxclassicbif_upper: procedure = .RexxValue
   context = dereference context_ref
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY") = 0 then return _context_error(context_ref)
-  return _ok(upper(context.argumentText(1)))
+  config = context.characterConfig()
+  if config.isByteProfile() then return _ok(upper(context.argumentText(1)))
+  return _ok(rexxclassic_unicode_upper(context.argumentText(1)))
 
 /**
  * Finds the first matching or non-matching reference character.
@@ -1398,7 +1684,7 @@ rexxclassicbif_verify: procedure = .RexxValue
   refchars = context.argumentText(2)
   mode = _arg_or(context_ref, 3, "N")
   start = 1
-  if context.argumentExists(4) then start = context.argumentText(4) + 0
+  if context.argumentExists(4) then start = (context.argumentText(4) as .int)
   if start > length(source) then return _ok("0")
   if length(refchars) = 0 then do
     if mode = "N" then return _ok(start || "")
@@ -1428,7 +1714,7 @@ rexxclassicbif_word: procedure = .RexxValue
   context = dereference context_ref
   call context.clearError()
   if rexxclassicbif_check_args(context_ref, "rANY rWHOLE>0") = 0 then return _context_error(context_ref)
-  return _ok(word(context.argumentText(1), context.argumentText(2) + 0))
+  return _ok(word(context.argumentText(1), (context.argumentText(2) as .int)))
 
 /**
  * Counts blank-delimited words.
